@@ -1,0 +1,3 @@
+[submodule "pylibrnp"]
+	path = pylibrnp
+	url = git@github.com:icl-rocketry/pylibrnp.git
