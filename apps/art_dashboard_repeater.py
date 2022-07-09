@@ -36,7 +36,27 @@ def on_message(data):
 def on_message(data):
     print(data)  
     print(type(data))  
-    udp_data = struct.pack(">ifffffffffffff", time.monotonic_ns()//1_000_000, random.random(), random.random(), random.random(),random.random(), random.random(), random.random(),random.random(), random.random(), random.random(), (random.random()-0.5) * 10, random.random(), random.random(), random.random())
+    # time roll pitch yaw gx gy gz ax ay az mx my mz lat lng alt temp press lux
+    udp_data = struct.pack(">iffffffffffffffffff", 
+                            data.system_time, 
+                            data.roll, 
+                            data.pitch, 
+                            data.yaw,
+                            data.gx, 
+                            data.gy, 
+                            data.gz,
+                            data.ax, 
+                            data.ay, 
+                            data.az, 
+                            data.mx, 
+                            data.my, 
+                            data.mz, 
+                           data.lat,
+                           data.lng,
+                           data.alt,
+                           data.baro_temp,
+                           data.baro_press,
+                           data.rssi)
     sock.sendto(udp_data, (IP, UDP_PORT))
 
 
