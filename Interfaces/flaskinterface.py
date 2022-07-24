@@ -194,7 +194,7 @@ def __SocketIOMessageQueueTask__(redishost,redisport):
     redis_connection = redis.Redis(host=redishost,port=redisport)
 
     while socketio_message_queue_task_running:
-        eventlet.sleep(0.1)# sleep for update time 
+        eventlet.sleep(0.01)# sleep for update time 
         data = redis_connection.rpop("MessageQueue")
         if data is not None:
            socketio.emit("message",json.dumps(json.loads(data)),namespace="/messages")
