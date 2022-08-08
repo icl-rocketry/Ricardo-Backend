@@ -25,7 +25,8 @@ threading.main_thread() returning false which breaks cmd2...
 
 # APP INITIALIZATION
 # flask app 
-app = Flask(__name__, static_folder='../frontend/build')
+app = Flask(__name__)
+# app = Flask(__name__, static_folder='../frontend/build')
 #app = Flask(__name__)
 app.config["SECRET_KEY"] = "secret!"
 app.config['DEBUG'] = False
@@ -50,13 +51,16 @@ updateTimePeriod = 0.01 #in seconds
 
 # FLASK APP 
 # new / route: return react site
-@app.route('/', defaults={'path': ''})
-@app.route('/<path:path>')
-def serve(path):
-    if path != "" and os.path.exists(app.static_folder + '/' + path):
-        return send_from_directory(app.static_folder, path)
-    else:
-        return send_from_directory(app.static_folder, 'index.html')
+# @app.route('/', defaults={'path': ''})
+# @app.route('/<path:path>')
+# def serve(path):
+#     if path != "" and os.path.exists('../frontend/build/' + path):
+#         return send_from_directory('../frontend/build/', path)
+#     else:
+#         return send_from_directory('../frontend/build/', 'index.html')
+@app.route('/')
+def root():
+    return send_from_directory('../build/', 'index.html')
 
 @app.route('/packet', methods=['POST'])
 def send_packet():
