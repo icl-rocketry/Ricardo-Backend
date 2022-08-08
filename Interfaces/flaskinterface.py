@@ -3,6 +3,7 @@
 from queue import Empty
 from flask import Flask, jsonify, request, Response, render_template, send_from_directory
 from flask_socketio import SocketIO, emit, send # added emit from flask_socketio
+from telemetry_webui.telemetry_webui import telemetry_webui_bp
 # system packages
 import time
 import redis
@@ -26,7 +27,8 @@ threading.main_thread() returning false which breaks cmd2...
 # APP INITIALIZATION
 # flask app 
 app = Flask(__name__)
-# app = Flask(__name__, static_folder='../frontend/build')
+app.register_blueprint(telemetry_webui_bp, url_prefix="/telemetry_ui")
+# app = Flask(__name__, static_folder='static/react')
 #app = Flask(__name__)
 app.config["SECRET_KEY"] = "secret!"
 app.config['DEBUG'] = False
@@ -54,13 +56,13 @@ updateTimePeriod = 0.01 #in seconds
 # @app.route('/', defaults={'path': ''})
 # @app.route('/<path:path>')
 # def serve(path):
-#     if path != "" and os.path.exists('../frontend/build/' + path):
-#         return send_from_directory('../frontend/build/', path)
+#     if path != "" and os.path.exists(app.static_folder + '/' + path):
+#         return send_from_directory(app.static_folder, path)
 #     else:
-#         return send_from_directory('../frontend/build/', 'index.html')
-@app.route('/')
-def root():
-    return send_from_directory('../build/', 'index.html')
+#         # return send_from_directory(app.static_folder, 'index.html')
+#         return render_template('index.html')
+
+
 
 @app.route('/packet', methods=['POST'])
 def send_packet():
@@ -260,4 +262,4 @@ def startFlaskInterface(flaskhost="0.0.0.0", flaskport=5000,
 
         
 if __name__ == "__main__":
-    startFlaskInterface(flaskport=3001, real_data=False)
+    startFlaskInterface(flaskport=1337, real_data=False)
