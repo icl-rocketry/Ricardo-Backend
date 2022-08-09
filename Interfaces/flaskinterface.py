@@ -4,6 +4,7 @@ from queue import Empty
 from flask import Flask, jsonify, request, Response, render_template, send_from_directory
 from flask_socketio import SocketIO, emit, send # added emit from flask_socketio
 from telemetry_webui.telemetry_webui import telemetry_webui_bp
+from command_webui.command_webui import command_webui_bp
 # system packages
 import time
 import redis
@@ -27,7 +28,9 @@ threading.main_thread() returning false which breaks cmd2...
 # APP INITIALIZATION
 # flask app 
 app = Flask(__name__)
+app.register_blueprint(command_webui_bp, url_prefix="/command_ui")
 app.register_blueprint(telemetry_webui_bp, url_prefix="/telemetry_ui")
+
 # app = Flask(__name__, static_folder='static/react')
 #app = Flask(__name__)
 app.config["SECRET_KEY"] = "secret!"
