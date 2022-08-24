@@ -3,8 +3,14 @@
 from queue import Empty
 from flask import Flask, jsonify, request, Response, render_template, send_from_directory
 from flask_socketio import SocketIO, emit, send # added emit from flask_socketio
-from telemetry_webui.telemetry_webui import telemetry_webui_bp
-from command_webui.command_webui import command_webui_bp
+
+if __name__ == "__main__":
+    from telemetry_webui.telemetry_webui import telemetry_webui_bp
+    from command_webui.command_webui import command_webui_bp
+else:
+    from .telemetry_webui.telemetry_webui import telemetry_webui_bp
+    from .command_webui.command_webui import command_webui_bp
+    
 # system packages
 import time
 import redis
