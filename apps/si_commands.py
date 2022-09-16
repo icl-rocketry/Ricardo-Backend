@@ -11,19 +11,21 @@ import socketio
 
 class CmdUI(cmd2.Cmd):
 
+    sio = socketio.Client(logger=False, engineio_logger=False)
 
+    def __init__(self,host='localhost',port=1337):
+        super().__init__(allow_cli_args=False)  
+        
 
-    def __init__(self):
-        super().__init__(allow_cli_args=False)    
-
-
+        self.sio.connect('http://' + host + ':' + str(port) + '/',namespaces=['/','/telemetry','/command','/messages'])  
 
     #setting up socketio client and event handler
-    sio = socketio.Client(logger=False, engineio_logger=False)
 
     @sio.event
     def connect():
         print("I'm connected!")
+
+
 
     @sio.event
     def connect_error(data):
@@ -33,16 +35,15 @@ class CmdUI(cmd2.Cmd):
     def disconnect():
         print("I'm disconnected!")
 
-
-
     #method for serializing and sending command and its argument
-    def send_cmd(source, destination, command_num, arg):
+    def send_cmd(self,source, destination, command_num, arg):
         cmd_packet : SimpleCommandPacket = SimpleCommandPacket(command = int(command_num), arg = int(arg))
         cmd_packet.header.destination_service = 2 #Note on old fw this will be 1
         cmd_packet.header.source = int(source)
         cmd_packet.header.destination = int(destination)
+    
 
-        CmdUI.sio.emit('Command',{cmd_packet.serialize()})
+        self.sio.emit('send_Data',{'data':cmd_packet.serialize().hex()},namespace='/command')
     
 
 
@@ -57,6 +58,11 @@ class CmdUI(cmd2.Cmd):
     @with_argparser(venting) 
     def do_vent(self,opts):
         
+        print(opts.arming)
+        if (opts.arming is 'a'):
+            print('do arming')
+
+
         if opts.arming.a:
             command_num = 1 #doesnt mean anything
         if opts.arming.d:
@@ -64,7 +70,7 @@ class CmdUI(cmd2.Cmd):
 
         arg = opts.angle
         
-        CmdUI.send_cmd(1, 1, command_num, arg)
+        self.send_cmd(1, 1, command_num, arg)
 
 
 
@@ -93,7 +99,7 @@ class CmdUI(cmd2.Cmd):
             arg = opts.setpoint
         
 
-        CmdUI.send_cmd(1, 1, command_num, arg)
+        self.send_cmd(1, 1, command_num, arg)
 
 
 
@@ -112,7 +118,7 @@ class CmdUI(cmd2.Cmd):
 
         arg = opts.angle
 
-        CmdUI.send_cmd(1, 1, command_num, arg)
+        self.send_cmd(1, 1, command_num, arg)
 
 
 
@@ -124,7 +130,7 @@ class CmdUI(cmd2.Cmd):
 
         arg = 0
 
-        CmdUI.send_cmd(1,1,command_num,arg)
+        self.send_cmd(1,1,command_num,arg)
 
 
 
@@ -136,7 +142,7 @@ class CmdUI(cmd2.Cmd):
 
         arg = 0
 
-        CmdUI.send_cmd(1,1,command_num,arg)
+        self.send_cmd(1,1,command_num,arg)
 
 
 
@@ -148,7 +154,7 @@ class CmdUI(cmd2.Cmd):
 
         arg = 0
 
-        CmdUI.send_cmd(1,1,command_num,arg)
+        self.send_cmd(1,1,command_num,arg)
 
 
 
@@ -160,4 +166,10 @@ class CmdUI(cmd2.Cmd):
 
         arg = 0
 
-        CmdUI.send_cmd(1,1,command_num,arg)
+        self.send_cmd(1,1,command_num,arg)
+
+
+
+if __name__ == "__main__":
+    cmd = CmdUI()
+    cmd.cmdloop()
