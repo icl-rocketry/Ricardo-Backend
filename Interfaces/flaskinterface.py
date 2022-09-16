@@ -42,7 +42,7 @@ app.register_blueprint(telemetry_webui_bp, url_prefix="/telemetry_ui")
 app.config["SECRET_KEY"] = "secret!"
 app.config['DEBUG'] = False
 # socketio app
-socketio = SocketIO(app,cors_allowed_origins="*",async_mode='eventlet')
+socketio = SocketIO(app,cors_allowed_origins="*",async_mode='eventlet',logger=False)
 socketio_clients = []
 
 # SYSTEM VARIABLES
@@ -130,8 +130,11 @@ def connect():
 
 @socketio.on('connect',namespace='/command')
 def connect_command():
-    print("Client : " + request.sid + " joined command...")
+    global socketio_clients
     socketio_clients.append(request.sid)
+    print("Client : " + request.sid + " joined command...")
+    
+    
     
 
 
@@ -176,7 +179,7 @@ def __TelemetryBroadcastTask__(redishost,redisport):
 
 #socketio repsonse task
 def __SocketIOResponseTask__(redishost,redisport):
-    global socketio_response_task_running
+    global socketio_response_task_running,socketio_clients
     socketio_response_task_running = True
 
     redis_connection = redis.Redis(host=redishost,port=redisport)
@@ -188,10 +191,16 @@ def __SocketIOResponseTask__(redishost,redisport):
             key_string:str = bytes(key).decode("UTF-8")
             # sid = key_string.removeprefix('ReceiveQueue:LOCAL:SOCKETIO:') #only works with py3.9
             sid = key_string[len('ReceiveQueue:LOCAL:SOCKETIO:'):]
+
+            print(key)
+            print(socketio_clients)
+
             if sid in socketio_clients:
                 redis_connection.persist(key) #remove key timeout
                 responseData:bytes = redis_connection.rpop(key)
                 response = {'Data':str(responseData.hex())}
+                print(response)
+
                 socketio.emit('Response',response,to=sid,namespace='/command')
 
             else:
@@ -255,7 +264,7 @@ def startFlaskInterface(flaskhost="0.0.0.0", flaskport=5000,
         socketio.start_background_task(__TelemetryBroadcastTask__,redishost,redisport)
         socketio.start_background_task(__SocketIOResponseTask__,redishost,redisport)
         socketio.start_background_task(__SocketIOMessageQueueTask__,redishost,redisport)
-        socketio.run(app, host=flaskhost, port=flaskport, debug=True, use_reloader=False)
+        socketio.run(app, host=flaskhost, port=flaskport, debug=False, use_reloader=False)
         cleanup()
 
     # fake signal handler for ui testing only!!!

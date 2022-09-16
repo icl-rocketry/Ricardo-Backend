@@ -66,7 +66,7 @@ if __name__ == "__main__":
         arg = input("arg : ")
         cmd_packet :SimpleCommandPacket= SimpleCommandPacket(command = int(command_num), arg = int(arg))
         cmd_packet.header.destination_service = int(destination_service)
-        cmd_packet.header.source_service = 0
+        cmd_packet.header.source_service = 1
         cmd_packet.header.source = int(source)
         cmd_packet.header.destination = int(destination)
         cmd_packet.header.packet_type = 0

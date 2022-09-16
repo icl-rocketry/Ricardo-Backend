@@ -96,10 +96,11 @@ class SerialManager():
 		while self.ser.in_waiting > 0:
 			incomming = self.ser.read(1)
 			# if self.verbose:
-			# 	try:
-			# 		print(incomming.decode('UTF-8'))
-			# 	except:
-			# 		print(str(incomming))
+				## print(str(incomming))
+				# try:
+				# 	print(incomming.decode('UTF-8'))
+				# except:
+				# 	print(str(incomming))
 			if (incomming == (0x00).to_bytes(1,'little')):
 				if (len(self.receiveBuffer) == 0):
 					#empty frame receved, discard this
@@ -108,6 +109,7 @@ class SerialManager():
 					decodedData = cobs.decode(bytearray(self.receiveBuffer))
 					self.__processReceivedPacket__(decodedData)
 					self.__sendToUDP__(decodedData) 
+					# print(decodedData)
 				except cobs.DecodeError as e:
 					print("Decode Error, the following data could not be decoded...")
 					print(e)
@@ -143,7 +145,7 @@ class SerialManager():
 			#handle packets addressed to the local packet handler on the backend
 			if (uid == 0) and (header.destination_service == 0):
 				self.__localPacketHandler__(data)
-
+				
 				return
 
 			#unkown packet received
