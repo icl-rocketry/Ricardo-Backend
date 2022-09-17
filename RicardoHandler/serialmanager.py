@@ -21,7 +21,9 @@ class SerialManager():
 		self.baud = baud
 		self.waittime = waittime
 		self.prevSendTime = 0
-		self.sendDelta = 1e4
+		# self.sendDelta = 1e4
+		self.sendDelta = 50e6
+
 		self.verbose = verbose
 		
 
