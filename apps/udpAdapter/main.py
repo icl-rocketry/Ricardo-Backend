@@ -170,7 +170,7 @@ if __name__ == "__main__":
             cmd_packet.header.destination = 0
             cmd_packet.header.source_service = 2
             cmd_packet.header.destination_service = 2
-            udpTxPort.queue.put({"data":bytes(cmd_packet.serialize())})
+            # udpTxPort.queue.put({"data":bytes(cmd_packet.serialize())})
             prevTime = time.time_ns()
 
 

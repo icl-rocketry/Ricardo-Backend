@@ -4,3 +4,4 @@
 [submodule "apps/magCalibration/pylibrnp"]
 	path = apps/magCalibration/pylibrnp
 	url = git@github.com:icl-rocketry/pylibrnp.git
+

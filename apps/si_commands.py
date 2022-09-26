@@ -16,6 +16,8 @@ class CmdUI(cmd2.Cmd):
 
     def __init__(self,host='localhost',port=1337):
         super().__init__(allow_cli_args=False)  
+
+        self.source_address = 4
         
 
         self.sio.connect('http://' + host + ':' + str(port) + '/',namespaces=['/','/command','/messages'])  
@@ -42,6 +44,9 @@ class CmdUI(cmd2.Cmd):
                 except:
                     message = str(packet_body)
                 print("Message: " + message)
+            if header.packet_type == 1:
+                print("got component state")
+                
 
         except:
             print("Failed to decode header")
@@ -124,6 +129,15 @@ class CmdUI(cmd2.Cmd):
         self.send_cmd(1, 1, command_num, arg)
 
 
+    getcomponentstate_ap  = Cmd2ArgumentParser(description='decode component state')
+    getcomponentstate_ap.add_argument('--address',type=int,required=True)
+    getcomponentstate_ap.add_argument('--service',type=int,required=True)
+
+    @with_argparser(getcomponentstate_ap)
+    def do_getcomponentstate(self,opts):
+        self.send_cmd(destination=opts.address,destination_service=opts.service,command_num=3,arg=0)
+
+
 
 
     # #filling arming command with angle argument
@@ -147,8 +161,10 @@ class CmdUI(cmd2.Cmd):
 
     #launch command
     def do_launch(self,opts):
+        self.send_cmd(source = self.source_address,destination = 2,command_num=1,arg=0)
 
-        self.send_cmd(4,2,1,0)
+    def do_debug(self,opts):
+        self.send_cmd(source=self.source_address,destination =2,command_num=100,arg=0)
 
 
 
@@ -157,14 +173,14 @@ class CmdUI(cmd2.Cmd):
     def do_a(self,opts):
         cmd_id = 2
         arg = 0
-        self.send_cmd(4,5,cmd_id,arg,destination_service=10)
+        self.send_cmd(self.source_address,5,cmd_id,arg,destination_service=10)
 
 
 
 
     #ignition command
     def do_ignite(self,opts):
-        self.send_cmd(4,2,69,0)
+        self.send_cmd(self.source_address,2,69,0)
 
     # #retract QD command
     # def do_retract(self):
@@ -174,6 +190,8 @@ class CmdUI(cmd2.Cmd):
     #     arg = 0
 
     #     self.send_cmd(1,1,command_num,arg)
+    def sigint_handler(self):
+        return True
 
 
 

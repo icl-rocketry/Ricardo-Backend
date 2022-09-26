@@ -13,6 +13,8 @@ import socket
 
 
 class SerialManager():
+	SimpleSend:int = 0
+	WaitForIncomming:int = 1
 
 	def __init__(self, device, baud=115200, waittime = .3,redishost = 'localhost',redisport = 6379,verbose=False,UDPMonitor=False,UDPIp='127.0.0.1',UDPPort=7000):
 		signal.signal(signal.SIGINT,self.exitHandler)
@@ -20,9 +22,15 @@ class SerialManager():
 		self.device = device
 		self.baud = baud
 		self.waittime = waittime
+		
+		self.sendMode = SerialManager.SimpleSend
 		self.prevSendTime = 0
-		# self.sendDelta = 1e4
-		self.sendDelta = 50e6
+
+		 
+		self.sendDelta = 1e4
+
+		self.sentWaitTimeout:int=1000e6
+		self.received_packet:bool=False
 
 		self.verbose = verbose
 		
@@ -123,6 +131,8 @@ class SerialManager():
 				self.receiveBuffer += incomming
  
 	def __processReceivedPacket__(self,data:bytes):
+		self.received_packet = True
+
 		try:
 			header = RnpHeader.from_bytes(data)#decode header
 		except DeserializationError:
@@ -180,15 +190,28 @@ class SerialManager():
 
 	def __checkSendQueue__(self):
 		#check if there are items present in send queue
-		if (time.time_ns() - self.prevSendTime) > self.sendDelta :
-			if self.rd.llen("SendQueue") > 0:
-				item = json.loads(self.rd.rpop("SendQueue"))
-				#item is a json object with structure 
-				#{data:bytes as hex string,
-				# clientid:""}
-				self.__sendPacket__(bytes.fromhex(item["data"]),item["clientid"])
-				self.prevSendTime = time.time_ns()
+		# if (time.time_ns() - self.prevSendTime) > self.sendDelta :
+		if (self.sendMode == SerialManager.WaitForIncomming):
+			if (self.received_packet):
+				self.__processSendQueue__()
+				self.received_packet = False
+			elif (time.time_ns() - self.prevSendTime > self.sentWaitTimeout):
+				# print("receive timeout, sending new packet")
+				self.__processSendQueue__()
+		elif (self.sendMode == SerialManager.SimpleSend):
+			if (time.time_ns()-self.prevSendTime > self.sendDelta):
+				self.__processSendQueue__()
+		
 			
+	
+	def __processSendQueue__(self):
+		if self.rd.llen("SendQueue") > 0:
+			item = json.loads(self.rd.rpop("SendQueue"))
+			#item is a json object with structure 
+			#{data:bytes as hex string,
+			# clientid:""}
+			self.__sendPacket__(bytes.fromhex(item["data"]),item["clientid"])
+			self.prevSendTime = time.time_ns()
 				
 		
 
