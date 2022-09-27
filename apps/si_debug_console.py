@@ -20,7 +20,8 @@ class CmdUI(cmd2.Cmd):
         self.source_address = 4
         
 
-        self.sio.connect('http://' + host + ':' + str(port) + '/',namespaces=['/','/command','/messages'])  
+        self.sio.connect('http://' + host + ':' + str(port) + '/',namespaces=['/','/command','/messages'])
+        self.sio.on('Response',self.on_response_handler,namespace='/command')   
 
     #setting up socketio client and event handler
 
@@ -29,8 +30,8 @@ class CmdUI(cmd2.Cmd):
         print("I'm connected!")
 
 
-    @sio.on('Response',namespace='/command')
-    def on_response_handler(data):
+    # @sio.on('Response',namespace='/command')
+    def on_response_handler(self,data):
         print(data)
         try:
             packet = bytes.fromhex(data['Data'])

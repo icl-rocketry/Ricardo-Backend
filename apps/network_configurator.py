@@ -1,5 +1,4 @@
 
-from socket import NETLINK_ARPD
 import cmd2
 import sys
 from cmd2.argparse_custom import Cmd2ArgumentParser
@@ -33,25 +32,25 @@ class ByteRnpPacket(RnpPacket):
 
 #reference rnp_netman_packets.h
 class NETMAN_TYPES(enum.Enum):
-    PING_REQ = 1
-    PING_RES = 2
-    SET_ADDRESS = 3
-    SET_ROUTE = 4
-    SET_TYPE = 5
-    SET_NOROUTEACTION = 6
-    SET_ROUTEGEN = 7
-    SAVE_CONF = 8
-    RESET_NETMAN = 9
+    PING_REQ:int = 1
+    PING_RES:int = 2
+    SET_ADDRESS:int = 3
+    SET_ROUTE:int = 4
+    SET_TYPE:int = 5
+    SET_NOROUTEACTION:int = 6
+    SET_ROUTEGEN:int = 7
+    SAVE_CONF:int = 8
+    RESET_NETMAN:int = 9
 
 #reference rnp_networkmanager.h
 class NODE_TYPE(enum.Enum):
-    LEAF=0
-    HUB=1
+    LEAF:int=0
+    HUB:int=1
 
 #reference rnp_networkmanager.h
 class NOROUTE_ACTION(enum.Enum):
-    DUMP=0
-    BROADCAST=1
+    DUMP:int=0
+    BROADCAST:int=1
 
 
 class NetworkConfigurationTool(cmd2.Cmd):
@@ -107,29 +106,34 @@ class NetworkConfigurationTool(cmd2.Cmd):
 
     set_address_ap = Cmd2ArgumentParser()
     set_address_ap.add_argument('-a','--current_address',type=int,help='Node Current Address',default=0)
-    set_address_ap.add_argument('-n','--new_address',type=int,help='New Address',required = True)
+    set_address_ap.add_argument('-n','--new_address',type=int,help='New Address',required=True)
+    @with_argparser(set_address_ap)
     def do_set_address(self,opts):
+        print(opts)
+        # pass
         packet = ByteRnpPacket()
         packet.value = opts.new_address
-        self.send_packet(packet,destination=opts.current_address,packet_type=NETMAN_TYPES.SET_ADDRESS)
+        self.send_packet(packet,destination=opts.current_address,packet_type=NETMAN_TYPES.SET_ADDRESS.value)
 
     set_type_ap = Cmd2ArgumentParser()
     set_type_ap.add_argument('-a','--current_address',type=int,help='Node Current Address',default=0)
     set_type_ap.add_argument('-o','--option',type=str,help='Node Type',required = True)
+    @with_argparser(set_type_ap)
     def do_set_type(self,opts):
         packet = ByteRnpPacket()
-        if opts.type == 'HUB':
-            packet.value = NODE_TYPE.HUB
-        elif opts.type == 'LEAF':
-            packet.value = NODE_TYPE.LEAF
+        if opts.option == 'HUB':
+            packet.value = NODE_TYPE.HUB.value
+        elif opts.option == 'LEAF':
+            packet.value = NODE_TYPE.LEAF.value
         else:
             print('Bad Argument')
             return  
-        self.send_packet(packet,destination=opts.current_address,packet_type=NETMAN_TYPES.SET_TYPE)
+        self.send_packet(packet,destination=opts.current_address,packet_type=NETMAN_TYPES.SET_TYPE.value)
 
     set_noroute_ap = Cmd2ArgumentParser()
     set_noroute_ap.add_argument('-a','--current_address',type=int,help='Node Current Address',default=0)
     set_noroute_ap.add_argument('-o','--option',type=str,help='Node Type',required = True)
+    @with_argparser(set_noroute_ap)
     def do_set_noroute(self,opts):
         #disabled as need to probably make a custom packet type to send broadcast list aswell otherwise this option
         #makes no sense
@@ -143,11 +147,12 @@ class NetworkConfigurationTool(cmd2.Cmd):
         else:
             print('Bad Argument')
             return  
-        self.send_packet(packet,destination=opts.current_address,packet_type=NETMAN_TYPES.SET_NOROUTEACTION)
+        self.send_packet(packet,destination=opts.current_address,packet_type=NETMAN_TYPES.SET_NOROUTEACTION.value)
 
     set_routegen_ap = Cmd2ArgumentParser()
     set_routegen_ap.add_argument('-a','--current_address',type=int,help='Node Current Address',default=0)
     set_routegen_ap.add_argument('-e','--enable',help='Enable Automatic Route Generation',action='store_true')
+    @with_argparser(set_routegen_ap)
     def do_set_routegen(self,opts):
         packet = ByteRnpPacket()
         if opts.enable:
@@ -155,20 +160,22 @@ class NetworkConfigurationTool(cmd2.Cmd):
         else:
             packet.value = 0
 
-        self.send_packet(packet,destination=opts.current_address,packet_type=NETMAN_TYPES.SET_ROUTEGEN)
+        self.send_packet(packet,destination=opts.current_address,packet_type=NETMAN_TYPES.SET_ROUTEGEN.value)
 
     set_save_conf_ap = Cmd2ArgumentParser()
     set_save_conf_ap.add_argument('-a','--current_address',type=int,help='Node Current Address',default=0)
+    @with_argparser(set_save_conf_ap)
     def do_save_conf(self,opts):
         packet = ByteRnpPacket()
-        self.send_packet(packet,destination=opts.current_address,packet_type=NETMAN_TYPES.SAVE_CONF)
+        self.send_packet(packet,destination=opts.current_address,packet_type=NETMAN_TYPES.SAVE_CONF.value)
 
 
     set_reset_ap = Cmd2ArgumentParser()
     set_reset_ap.add_argument('-a','--current_address',type=int,help='Node Current Address',default=0)
+    @with_argparser(set_reset_ap)
     def do_reset(self,opts):
         packet = ByteRnpPacket()
-        self.send_packet(packet,destination=opts.current_address,packet_type=NETMAN_TYPES.RESET_NETMAN)
+        self.send_packet(packet,destination=opts.current_address,packet_type=NETMAN_TYPES.RESET_NETMAN.value)
 
 
     @sio.event
@@ -243,7 +250,7 @@ class NetworkConfigurationTool(cmd2.Cmd):
             }
 
         pingpacket = ByteRnpPacket()
-        self.send_packet(pingpacket,destination=destination,packet_type=NETMAN_TYPES.PING_REQ)
+        self.send_packet(pingpacket,destination=destination,packet_type=NETMAN_TYPES.PING_REQ.value)
 
 
 
