@@ -1,6 +1,7 @@
 
 //var url = 'http://' + document.domain + ':' + location.port
 var url = 'http://' + location.host + '/telemetry'
+// var url = 'http://localhost:1337/telemetry'
 var socket = io(url);
 var telemetry_timeseries = [{}];
 var prev_telemetry = {};

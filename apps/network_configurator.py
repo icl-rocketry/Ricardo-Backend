@@ -25,9 +25,9 @@ class ByteRnpPacket(RnpPacket):
                          ByteRnpPacket.packet_type)
     
     def __str__(self):
-        header_str = self.header.__str__() + '\ns'
+        header_str = self.header.__str__() + '\n'
         desc_str = str(self.value)
-        return header_str
+        return header_str+desc_str
 
 
 #reference rnp_netman_packets.h
@@ -54,7 +54,7 @@ class NOROUTE_ACTION(enum.Enum):
 
 
 class NetworkConfigurationTool(cmd2.Cmd):
-    sio = socketio.Client(logger=True, engineio_logger=False)
+    sio = socketio.Client(logger=False, engineio_logger=False)
 
     def __init__(self,host='localhost',port=1337):
         super().__init__(allow_cli_args=False)  
