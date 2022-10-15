@@ -86,3 +86,81 @@ class SimpleCommandPacket(RnpPacket):
         header_str = self.header.__str__() + "\n"
         param_str = f'SIMPLE COMMAND PACKET BODY: \tcommand = {self.command}\n \t\t\targument = {self.arg}\n'
         return header_str + param_str
+
+
+
+class processedsensorpacket(RnpPacket):
+    '''description'''
+	
+    struct_str = '<ffffffffffffffffffffLQ'
+                   
+    size = struct.calcsize(struct_str)
+    packet_type = 0
+   
+    def __init__(self):
+
+        self.ch0sens:float = 0
+        self.ch1sens:float = 0
+        self.ch2sens:float = 0
+        self.ch3sens:float = 0
+        self.ch4sens:float = 0
+        self.ch5sens:float = 0
+        self.ch6sens:float = 0
+        self.ch7sens:float = 0
+        self.ch8sens:float = 0
+        self.ch9sens:float = 0
+        self.temp0:float = 0
+        self.temp1:float = 0
+        self.temp2:float = 0
+        self.temp3:float = 0
+        self.temp4:float = 0
+        self.temp5:float = 0
+        self.temp6:float = 0
+        self.temp7:float = 0
+        self.temp8:float = 0
+        self.temp9:float = 0
+        self.system_status:int = 0
+        self.system_time:int = 0
+
+        super().__init__(list(vars(self).keys()),
+                         processedsensorpacket.struct_str,
+                         processedsensorpacket.size,
+                         processedsensorpacket.packet_type)
+
+    def __str__(self):
+        header_str = self.header.__str__() + '\ns'
+        desc_str = f'TELEMETRY PACKET BODY: Havent done this yet oops\n'
+        return header_str
+
+class rawADCPacket(RnpPacket):
+    '''description'''
+	
+    struct_str = '<LLLLLLLLLLLQ'
+                   
+    size = struct.calcsize(struct_str)
+    packet_type = 0
+   
+    def __init__(self):
+
+        self.ch0:int = 0
+        self.ch1:int = 0
+        self.ch2:int = 0
+        self.ch3:int = 0
+        self.ch4:int = 0
+        self.ch5:int = 0
+        self.ch6:int = 0
+        self.ch7:int = 0
+        self.ch8:int = 0
+        self.ch9:int = 0
+        self.system_status:int = 0
+        self.system_time:int = 0
+
+        super().__init__(list(vars(self).keys()),
+                         rawADCPacket.struct_str,
+                         rawADCPacket.size,
+                         rawADCPacket.packet_type)
+
+    def __str__(self):
+        header_str = self.header.__str__() + '\ns'
+        desc_str = f'TELEMETRY PACKET BODY: Havent done this yet oops\n'
+        return header_str

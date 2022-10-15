@@ -161,7 +161,8 @@ class SerialManager():
 				return
 
 			#unkown packet received
-			print("[ERROR] unkown packet recieved")
+			print("[ERROR-BACKEND] unkown packet recieved")
+			print(header)
 			key = "ReceiveQueue:__UNKOWN_PACKET__"
 
 			

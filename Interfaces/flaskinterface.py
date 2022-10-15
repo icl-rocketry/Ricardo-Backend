@@ -76,6 +76,8 @@ updateTimePeriod = 0.01 #in seconds
 @app.route('/packet', methods=['POST'])
 def send_packet():
     packet_data = request.json
+    print('POST DATA')
+    print(packet_data)
     if packet_data == None:
         return 'Bad Request',400
     if all (keys in packet_data for keys in ("data","clientid")):
@@ -218,7 +220,7 @@ def __SocketIOMessageQueueTask__(redishost,redisport):
     redis_connection = redis.Redis(host=redishost,port=redisport)
 
     while socketio_message_queue_task_running:
-        eventlet.sleep(0.01)# sleep for update time 
+        eventlet.sleep(0.005)# sleep for update time 
         data = redis_connection.rpop("MessageQueue")
         if data is not None:
            socketio.emit("message",json.dumps(json.loads(data)),namespace="/messages")

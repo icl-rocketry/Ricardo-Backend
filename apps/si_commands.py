@@ -121,37 +121,37 @@ class CmdUI(cmd2.Cmd):
     #venting arming command with angle of servo argument
     vent_ap = Cmd2ArgumentParser(description='arming of venting and setting angle of servo')
     vent_ap.add_argument('--arm', type=str, help='arming of oxidiser vent', choices=['ARM','DISARM'])
-    vent_ap.add_argument('--param', type=int, help='angle of vent valve servo 0-180 degrees',choices=[range(0,180)])
+    vent_ap.add_argument('--param', type=int, help='angle of vent valve servo 0-180 degrees')
     vent_ap.add_argument('--getstate', help='request state update',action='store_true')
     
     @with_argparser(vent_ap) 
     def do_vent(self,opts):
         opts.address = 8
         opts.service = 10
-        self.do_component(opts)
+        self.component(opts)
         
 
     fill_ap = Cmd2ArgumentParser(description='arming of filling and setting angle of servo')
     fill_ap.add_argument('--arm', type=str, help='arming of oxidiser fill', choices=['ARM','DISARM'])
-    fill_ap.add_argument('--param', type=int, help='angle of fill valve servo 0-180 degrees',choices=[range(0,180)])
+    fill_ap.add_argument('--param', type=int, help='angle of fill valve servo 0-180 degrees')
     fill_ap.add_argument('--getstate', help='request state update',action='store_true')
     
     @with_argparser(fill_ap) 
     def do_fill(self,opts):
         opts.address = 12
         opts.service = 10
-        self.do_component(opts)
+        self.component(opts)
 
     hose_vent_ap = Cmd2ArgumentParser(description='arming of hose_venting and setting angle of servo')
     hose_vent_ap.add_argument('--arm', type=str, help='arming of oxidiser hose_vent', choices=['ARM','DISARM'])
-    hose_vent_ap.add_argument('--param', type=int, help='angle of hose_vent valve servo 0-180 degrees',choices=[range(0,180)])
+    hose_vent_ap.add_argument('--param', type=int, help='angle of hose_vent valve servo 0-180 degrees')
     hose_vent_ap.add_argument('--getstate',  help='request state update',action='store_true')
     
     @with_argparser(hose_vent_ap) 
     def do_hose_vent(self,opts):
-        opts.address = 12
+        opts.address = 13
         opts.service = 10
-        self.do_component(opts)
+        self.component(opts)
     
     retract_ap = Cmd2ArgumentParser(description='arming of retracting and retracting hose')
     retract_ap.add_argument('--arm', type=str, help='arming of oxidiser retract', choices=['ARM','DISARM'])
@@ -160,17 +160,17 @@ class CmdUI(cmd2.Cmd):
     
     @with_argparser(retract_ap) 
     def do_retract(self,opts):
-        opts.address = 12
+        opts.address = 13
         opts.service = 10
         try:
             if (opts.param == -1):
-                opts.param = 140
+                opts.param = 198
             elif(opts.param == 1):
-                opts.param = 40
+                opts.param = 98
         except KeyError:
             pass
 
-        self.do_component(opts)
+        self.component(opts)
     
 
     component_ap = Cmd2ArgumentParser()
@@ -182,6 +182,10 @@ class CmdUI(cmd2.Cmd):
 
     @with_argparser(component_ap)
     def do_component(self,opts):
+        self.component(opts)
+
+
+    def component(self,opts):
 
         try:
             if (opts.arm == 'ARM'):
@@ -212,13 +216,13 @@ class CmdUI(cmd2.Cmd):
     def do_tankheat(self,opts):
 
         if opts.tank_num==1:
-            opts.address = 14
-            opts.service = 12
-            self.do_component(opts)
+            opts.address = 12
+            opts.service = 13
+            self.component(opts)
         elif opts.tank_num==2:
-            opts.address = 15
-            opts.service = 12
-            self.do_component(opts)
+            opts.address = 13
+            opts.service = 13
+            self.component(opts)
 
     #launch command
     def do_launch(self,opts):
