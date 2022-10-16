@@ -118,6 +118,27 @@ class CmdUI(cmd2.Cmd):
     
     #sending commands from user
 
+    pdu_ap = Cmd2ArgumentParser()
+    pdu_ap.add_argument('num',type=int,choices=[1,2])
+    pdu_ap.add_argument('--enable',action='store_true')
+    pdu_ap.add_argument('--disable',action='store_true')
+    @with_argparser(pdu_ap)
+    def do_pdu(self,opts):
+
+        
+        if opts.num == 1:
+            pdu_address = 10
+        elif opts.num == 2:
+            pdu_address = 11
+
+        if opts.enable:
+            command_num = 42
+        elif opts.disable:
+            command_num=43
+
+        cmd_packet = SimpleCommandPacket(command_num,0)
+        self.send_packet(cmd_packet,destination = pdu_address,source = 2, destination_service=2,source_service=2)
+
     #venting arming command with angle of servo argument
     vent_ap = Cmd2ArgumentParser(description='arming of venting and setting angle of servo')
     vent_ap.add_argument('--arm', type=str, help='arming of oxidiser vent', choices=['ARM','DISARM'])
@@ -161,7 +182,7 @@ class CmdUI(cmd2.Cmd):
     @with_argparser(retract_ap) 
     def do_retract(self,opts):
         opts.address = 13
-        opts.service = 10
+        opts.service = 11
         try:
             if (opts.param == -1):
                 opts.param = 198

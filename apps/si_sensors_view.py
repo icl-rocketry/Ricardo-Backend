@@ -83,7 +83,7 @@ class SI_Sensor_View(cmd2.Cmd):
                 self.sensor_data["fill_p"] = sensor_packet.ch9sens
 
             if (header.source == flight_sensor_board_address):
-                self.sensor_data["temp3"] = sensor_packet.ch2sens
+                self.sensor_data["temp3"] = sensor_packet.ch3sens
                 self.sensor_data["cham_p"] = sensor_packet.ch6sens
                 self.sensor_data["tank_p"] = sensor_packet.ch9sens
 
