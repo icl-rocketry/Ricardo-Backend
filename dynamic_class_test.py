@@ -29,3 +29,12 @@ print(c_instance.packetvars)
 
 print(c_instance.getData())
 # print(c2().arg)
+
+class test():
+    def __exit__(self,*args):
+        print('destructor called')
+
+
+container = {"t1",test()}
+print(container)
+container = {}

@@ -10,7 +10,8 @@ import time
 from ...pylibrnp import defaultpackets
 from ...pylibrnp import dynamic_rnp_packet_generator as drpg
 import csv
-
+import sys
+import signal
 
 class DataRequestTask():
     def __init__(self,jsonconfig):
@@ -18,6 +19,9 @@ class DataRequestTask():
         self.config = None
         self.packet_class = None #class type representing incomming data packet
         self.updateConfig(jsonconfig)
+
+        self.connectionTimeout = 5000 #in ms
+        self.lastReceivedTime = 0
 
         try:
             self.logfile = open(self.config['task_name']+'.csv','x')
@@ -33,24 +37,40 @@ class DataRequestTask():
     
     def updateConfig(self,jsonconfig):
         self.config=jsonconfig
+        self.config['rxCounter'] = 0
+        self.config['txCounter'] = 0
+        self.config['connected'] = True
+        self.config['lastReceivedPacket'] = ""
         #generate dynamic type and store type
         self.packet_class = drpg.DynamicRnpPacketGenerator(self.config['packet_descriptor']).getClass()
 
     def requestUpdate(self):
 
         if self.config['running']:
+
+            if (time.time_ns() - self.lastReceivedTime > (self.connectionTimeout*1000)):
+                self.config['connected'] = False
+
             if (time.time_ns() - self.prevUpdateTime > (self.config["poll_delta"]*1000)):
                 command_packet = defaultpackets.SimpleCommandPacket(command = self.config['command_id'],arg=self.config['request_config']['command_arg'])
                 command_packet.header.source = self.config['request_config']['source']
                 command_packet.header.destination = self.config['request_config']['destination']
                 command_packet.header.source_service = 2 #this is not too important
                 command_packet.header.destination_service = self.config['request_config']['destination_service']
-                command_packet.header.packet_type = 0
+                command_packet.header.packet_type = 0 #command packet type is always zero
                 self.prevUpdateTime = time.time_ns()
+                self.config['txCounter'] += 1
                 return command_packet
+
         return None
 
     def decodeData(self,data):
+        #update connection state varaibles
+        self.config['rxCounter'] += 1
+        self.lastReceivedTime = time.time_ns()
+        self.config['lastReceivedPacket'] = data
+        self.config['connected'] = True
+
         deserialized_packet = self.packet_class.from_bytes(data)
         if self.config['logger']:
             self.csv_writer.writerow(deserialized_packet.getData())
@@ -74,20 +94,28 @@ class DataRequestTaskHandler():
         self.task_container = {} #{task_name:task_object}
 
         self.sio.connect('http://' + socketiohost + ':' + str(socketioport) + '/',namespaces=['/','/telemetry','/data_request_handler'])
+        # assign functions to events
         self.sio.on('getRunningTasks',self.on_get_running_tasks,namespace='/data_request_handler')
         self.sio.on('newTaskConfig',self.on_new_task_config,namespace='/data_request_handler')
         self.sio.on('deleteTaskConfig',self.on_delete_task_config,namespace='/data_request_handler')
         self.sio.on('saveHandlerConfig',self.on_save_handler_config,namespace='/data_request_handler')
-        self.sio.on('clearHandlerConfig',self.on_clear_handler_config,namespace='/data_request_handler')
+        self.sio.on('clearTasks',self.on_clear_tasks,namespace='/data_request_handler')
 
-        self.handler_config = {}
+        self.handler_config = []
         self.run = True
+        signal.signal(signal.SIGINT,self.__exitHandler__)
+        signal.signal(signal.SIGNTERM,self.__exitHandler__)
+
 
     def on_get_running_tasks(self):
-        self.sio.emit('runningTasks',self.handler_config,namespace='/data_request_handler')
+        """Returns the current running tasks within the data request task handler as a json"""
+        #concatenate all task configs into single dict and emit to all clients
+        running_tasks = [task.config for task in self.task_container.values()]
+        self.sio.emit('runningTasks',running_tasks,namespace='/data_request_handler')
         
       
     def on_new_task_config(self,data):
+        """Adds a new task to the config to reques new data"""
         #if already exists, delete old task and spin up new one
         task_id = data["task_name"]
         if task_id in self.task_container.keys():
@@ -97,7 +125,7 @@ class DataRequestTaskHandler():
     
     def on_delete_task_config(self,data):
         task_id = data['task_name']
-        self.task_container.pop(task_id)
+        self.task_container.pop(task_id) #delete that task
         
 
     def on_save_handler_config(self):
@@ -109,8 +137,10 @@ class DataRequestTaskHandler():
         with open('DataRequestTaskConfig.json','w',encoding='utf-8') as file:
             json.dump(self.handler_config,file)
     
-    def on_clear_handler_config(self):
-        self.handler_config = {}
+    def on_clear_tasks(self):
+        self.handler_config = []
+        
+
 
     def mainloop(self):
         while self.run:
@@ -151,4 +181,7 @@ class DataRequestTaskHandler():
                 self.r.delete(key)#delete the whole receive queue as task is no longer active   
         
 
-
+    def __exitHandler__(self,sig=None,frame=None):
+        self.run=False
+        self.sio.disconnect()
+        sys.exit(0)
