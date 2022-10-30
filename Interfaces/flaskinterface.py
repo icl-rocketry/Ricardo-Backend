@@ -208,7 +208,7 @@ def __SocketIOResponseTask__(redishost,redisport):
             else:
                 redis_connection.delete(key)#delete the whole receive queue as client is no longer connected     
         
-        eventlet.sleep(0.01)
+        eventlet.sleep(0.005)
 
     print("SocketIOResponseTask Killed")
 
