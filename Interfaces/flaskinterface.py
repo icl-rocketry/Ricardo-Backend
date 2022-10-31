@@ -7,9 +7,11 @@ from flask_socketio import SocketIO, emit, send # added emit from flask_socketio
 if __name__ == "__main__":
     from telemetry_webui.telemetry_webui import telemetry_webui_bp
     from command_webui.command_webui import command_webui_bp
+    from datarequesttaskhandler import DataRequestTaskHandler
 else:
     from .telemetry_webui.telemetry_webui import telemetry_webui_bp
     from .command_webui.command_webui import command_webui_bp
+    from .datarequesttaskhandler import DataRequestTaskHandler
     
 # system packages
 import time
@@ -42,12 +44,11 @@ app.register_blueprint(telemetry_webui_bp, url_prefix="/telemetry_ui")
 app.config["SECRET_KEY"] = "secret!"
 app.config['DEBUG'] = False
 # socketio app
-socketio = SocketIO(app,cors_allowed_origins="*",async_mode='eventlet',logger=False)
+socketio = SocketIO(app,cors_allowed_origins="*",async_mode='eventlet',logger=True)
 socketio_clients = []
 
 # SYSTEM VARIABLES
 # thread-safe variables
-telemetry_broadcast_running:bool = False
 socketio_response_task_running:bool = False
 socketio_message_queue_task_running:bool = False
 dummy_signal_running:bool = False
@@ -137,7 +138,7 @@ def connect_command():
     print("Client : " + request.sid + " joined command...")
     
     
-    
+
 
 
 @socketio.on('send_data',namespace='/command')
@@ -160,24 +161,9 @@ def disconnect_command():
 
 
 # TASKS
-# telemetry broadcast
-def __TelemetryBroadcastTask__(redishost,redisport):
-    global telemetry_broadcast_running
-    telemetry_broadcast_running = True
-
-    redis_connection = redis.Redis(host=redishost,port=redisport)
-    prev_telemetry = {}
-    
-    while telemetry_broadcast_running:
-        eventlet.sleep(updateTimePeriod)# sleep for update time 
-        telemetry_data = redis_connection.get("telemetry")
-        if telemetry_data is not None:
-            if (prev_telemetry.get("system_time",0) != (json.loads(telemetry_data)).get("system_time",0)) or not prev_telemetry:#only broadcast new data
-                socketio.emit('telemetry', json.dumps(json.loads(telemetry_data)),namespace='/telemetry') #need to see how this function handles socketio not being started
-            prev_telemetry = json.loads(telemetry_data)
-        
-    
-    print('TelemetryBroadcastTask Killed')
+def startDataRequestHandler(redis_host,redis_port):
+    datarequesthandler = DataRequestTaskHandler(socketio,redishost=redis_host,redisport=redis_port)
+    datarequesthandler.mainloop()
 
 #socketio repsonse task
 def __SocketIOResponseTask__(redishost,redisport):
@@ -223,7 +209,7 @@ def __SocketIOMessageQueueTask__(redishost,redisport):
         eventlet.sleep(0.005)# sleep for update time 
         data = redis_connection.rpop("MessageQueue")
         if data is not None:
-           socketio.emit("message",json.dumps(json.loads(data)),namespace="/messages")
+           socketio.emit("new_message",json.dumps(json.loads(data)),namespace="/messages")
     print("SocketIOMessageQueueTask Killed")
 
 # dummy signal
@@ -237,12 +223,10 @@ def __DummySignalBroadcastTask__():
     print('DummySignalBroadCastTask Killed')
 
 
-
 # thread cleanup
 def cleanup(sig=None,frame=None): #ensure the telemetry broadcast thread has been killed
-    global telemetry_broadcast_running, dummy_signal_running, socketio_response_task_running
+    global dummy_signal_running, socketio_response_task_running
     
-    telemetry_broadcast_running = False
     dummy_signal_running = False
     socketio_response_task_running = False
 
@@ -263,7 +247,7 @@ def startFlaskInterface(flaskhost="0.0.0.0", flaskport=5000,
 
         r = redis.Redis(redishost,redisport)
 
-        socketio.start_background_task(__TelemetryBroadcastTask__,redishost,redisport)
+        socketio.start_background_task(startDataRequestHandler,redishost,redisport)
         socketio.start_background_task(__SocketIOResponseTask__,redishost,redisport)
         socketio.start_background_task(__SocketIOMessageQueueTask__,redishost,redisport)
         socketio.run(app, host=flaskhost, port=flaskport, debug=False, use_reloader=False)

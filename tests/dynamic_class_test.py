@@ -38,3 +38,4 @@ class test():
 container = {"t1",test()}
 print(container)
 container = {}
+print(container)

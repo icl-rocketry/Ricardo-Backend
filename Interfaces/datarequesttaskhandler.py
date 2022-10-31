@@ -1,18 +1,17 @@
 
-from cgitb import lookup
-from dataclasses import field
-from queue import Empty
+
 import threading
 import redis
-import socketio
+# import socketio
 import json
 import time
-from ...pylibrnp import defaultpackets
-from ...pylibrnp import dynamic_rnp_packet_generator as drpg
+from pylibrnp import defaultpackets
+from pylibrnp import dynamic_rnp_packet_generator as drpg
 import csv
 import sys
 import signal
 
+MS_TO_NS = 1e6
 class DataRequestTask():
     def __init__(self,jsonconfig):
         
@@ -23,12 +22,14 @@ class DataRequestTask():
         self.connectionTimeout = 5000 #in ms
         self.lastReceivedTime = 0
 
+        newFile=False
+
         try:
-            self.logfile = open(self.config['task_name']+'.csv','x')
+            self.logfile = open("Logs/"+self.config['task_name']+'.csv','x')
             newFile = True
         except FileExistsError:
-            self.logfile = open(self.config['task_name']+'.csv','a')
-        self.csv_writer = csv.DictWriter(self.logfile,fieldnames=self.packet_class.packetvars)
+            self.logfile = open("Logs/"+self.config['task_name']+'.csv','a')
+        self.csv_writer = csv.DictWriter(self.logfile,fieldnames=self.packet_class().packetvars)
 
         if newFile:
             self.csv_writer.writeheader()
@@ -42,17 +43,17 @@ class DataRequestTask():
         self.config['connected'] = True
         self.config['lastReceivedPacket'] = ""
         #generate dynamic type and store type
-        self.packet_class = drpg.DynamicRnpPacketGenerator(self.config['packet_descriptor']).getClass()
+        self.packet_class = drpg.DynamicRnpPacketGenerator('anon_packettype',self.config['packet_descriptor']).getClass()
 
     def requestUpdate(self):
 
         if self.config['running']:
-
-            if (time.time_ns() - self.lastReceivedTime > (self.connectionTimeout*1000)):
+    
+            if (time.time_ns() - self.lastReceivedTime > (self.connectionTimeout*MS_TO_NS)):
                 self.config['connected'] = False
 
-            if (time.time_ns() - self.prevUpdateTime > (self.config["poll_delta"]*1000)):
-                command_packet = defaultpackets.SimpleCommandPacket(command = self.config['command_id'],arg=self.config['request_config']['command_arg'])
+            if (time.time_ns() - self.prevUpdateTime > (self.config["poll_delta"]*MS_TO_NS)):
+                command_packet = defaultpackets.SimpleCommandPacket(command = self.config['request_config']['command_id'],arg=self.config['request_config']['command_arg'])
                 command_packet.header.source = self.config['request_config']['source']
                 command_packet.header.destination = self.config['request_config']['destination']
                 command_packet.header.source_service = 2 #this is not too important
@@ -82,29 +83,29 @@ class DataRequestTask():
 
     
 
-
 class DataRequestTaskHandler():
 
-    sio = socketio.Client()
 
-    def __init__(self,redishost,redisport,socketiohost,socketioport):
+    def __init__(self,sio_instance,redishost,redisport,socketiohost=None,socketioport=None):
         self.r = redis.Redis(redishost,redisport)
         self.client_id_prefix = "LOCAL:DATAREQUESTHANDLER:"
+        self.config_filename = 'Config/DataRequestTaskConfig.json'
         
         self.task_container = {} #{task_name:task_object}
 
-        self.sio.connect('http://' + socketiohost + ':' + str(socketioport) + '/',namespaces=['/','/telemetry','/data_request_handler'])
         # assign functions to events
-        self.sio.on('getRunningTasks',self.on_get_running_tasks,namespace='/data_request_handler')
-        self.sio.on('newTaskConfig',self.on_new_task_config,namespace='/data_request_handler')
-        self.sio.on('deleteTaskConfig',self.on_delete_task_config,namespace='/data_request_handler')
-        self.sio.on('saveHandlerConfig',self.on_save_handler_config,namespace='/data_request_handler')
-        self.sio.on('clearTasks',self.on_clear_tasks,namespace='/data_request_handler')
+        self.sio = sio_instance
+        self.sio.on_event('getRunningTasks',self.on_get_running_tasks,namespace='/data_request_handler')
+        self.sio.on_event('newTaskConfig',self.on_new_task_config,namespace='/data_request_handler')
+        self.sio.on_event('deleteTaskConfig',self.on_delete_task_config,namespace='/data_request_handler')
+        self.sio.on_event('saveHandlerConfig',self.on_save_handler_config,namespace='/data_request_handler')
+        self.sio.on_event('clearTasks',self.on_clear_tasks,namespace='/data_request_handler')
 
-        self.handler_config = []
+        
         self.run = True
         signal.signal(signal.SIGINT,self.__exitHandler__)
-        signal.signal(signal.SIGNTERM,self.__exitHandler__)
+        signal.signal(signal.SIGTERM,self.__exitHandler__)
+        self.load_handler_config() #load handler config if it exists
 
 
     def on_get_running_tasks(self):
@@ -122,39 +123,71 @@ class DataRequestTaskHandler():
             self.task_container[task_id].updateConfig(data)
         else:
             self.task_container[task_id] = DataRequestTask(data)
-    
+
+  
     def on_delete_task_config(self,data):
         task_id = data['task_name']
-        self.task_container.pop(task_id) #delete that task
+        self.task_container.pop(task_id).__exit__() #call destructor and delete that task
         
 
     def on_save_handler_config(self):
 
-        if self.handler_config is False:
-            print("No Config to save!")
-            return
-
-        with open('DataRequestTaskConfig.json','w',encoding='utf-8') as file:
-            json.dump(self.handler_config,file)
+        if self.task_container is False:
+            print("No Tasks, Saving empty json")
+            handler_config = {}
+        else:
+            handler_config = [task.config for task in self.task_container.values()]
+        with open(self.config_filename,'w',encoding='utf-8') as file:
+            json.dump(handler_config,file)
     
-    def on_clear_tasks(self):
-        self.handler_config = []
+    def load_handler_config(self):
+        try:
+            with open(self.config_filename,'r',encoding='utf-8') as file:
+                try:
+                    handler_config = json.load(file)
+                    if not handler_config:
+                        print("Empty Json Config")
+                        return
+                    for config in handler_config:
+                        if config.get('autostart',0) is True:
+                            config['running'] = True
+                        else:
+                            config['running'] = False
+                        self.on_new_task_config(config) 
+                        #generate new tasks
+                except json.JSONDecodeError:
+                    print("Error opening config file!")
+                    return
+        except FileNotFoundError as e:
+            print(e)
+            print('No Config Found!')
+            return
         
+
+    def on_clear_tasks(self):
+        #remove all tasks and call destructor on all
+        task_ids = self.task_container.keys()
+        [self.task_container.pop(task_id).__exit__() for task_id in task_ids] 
+
 
 
     def mainloop(self):
         while self.run:
-            for key,task in self.task_container.items():
+            for task_id,task in self.task_container.items():    
                 request_packet = task.requestUpdate() 
                 if request_packet is not None:
-                    self.__sendPacketFunction__(request_packet,task.config['task_name'])
+                    self.__sendPacketFunction__(request_packet,task_id)
             self.__checkReceiveQueue__()
+            self.sio.sleep(0.005)
     
     def publish_new_data(self,data,task_id):
         task = self.task_container[task_id]
         decodedData = task.decodeData(data)
-        #add prefix to new json
-        prefixedData = {decodedData[task_id+":"+key]:value for key,value in decodedData.items()}
+        #publish to socketio
+        self.sio.emit(task_id,decodedData,namespace='/telemetry')
+        #publish to redis
+        self.r.set("telemetry:"+task_id,json.dumps(decodedData))
+
 
         
     def __sendPacketFunction__(self,packet,task_id):
@@ -183,5 +216,6 @@ class DataRequestTaskHandler():
 
     def __exitHandler__(self,sig=None,frame=None):
         self.run=False
-        self.sio.disconnect()
         sys.exit(0)
+
+        

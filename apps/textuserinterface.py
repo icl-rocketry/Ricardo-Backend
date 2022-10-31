@@ -310,6 +310,8 @@ class TextUserInterface(multiprocessing.Process):
         self.count = 0
         self.r = redis.Redis(host=redishost,port=redisport)
         self.exit_event = multiprocessing.Event()
+        self.prevTelemetry = None
+        self.telemetryTimeout = 10000 #10 second timeout in ms
 
 
     def run(self):
@@ -330,7 +332,13 @@ class TextUserInterface(multiprocessing.Process):
 
 
         try:
-            data = json.loads(self.r.get("telemetry"))
+            data = json.loads(self.r.get("telemetry:fc_telemetry"))
+            if self.prevTelemetry is not None:
+                if data['system_time'] - self.prevTelemetry['system_time'] > self.telemetryTimeout:
+                    data['connectionstatus'] = False
+                else:
+                    data['connectionstatus'] = True
+            self.prevTelemetry = data
             #data["connectionstatus"] = True
         except:
             data = {"connectionstatus":False}

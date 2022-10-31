@@ -1,6 +1,7 @@
 {
-    "task_name": "telemetry_task",
-    "poll_delta": 50, //ms
+    "task_name": "fc_telemetry",
+    "autostart":false,
+    "poll_delta": 2000, //ms
     "running": true,
     "logger": true,
     "request_config": {
@@ -8,7 +9,7 @@
         "destination": 2,
         "destination_service": 2,
         "command_id": 8,
-        "command_arg": 0
+        "command_arg": 0 
     },
     "packet_descriptor": {
         "pn": "float",
