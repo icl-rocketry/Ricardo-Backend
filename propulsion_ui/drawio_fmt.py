@@ -8,7 +8,6 @@
 #   Each group needs to have a text element with a unique name, so we can uniquely identify each click (TODO: figure out what link to give em)
 # Code to decompress the nonsense data
 
-from typing import Tuple, Dict, List
 from bs4 import BeautifulSoup
 import json
 import xml.etree.ElementTree as ET
@@ -45,7 +44,7 @@ def get_diagram_from_html(filename: str) -> str:
         xml = ET.fromstring(diagram_xml)
         return xml.find("diagram").text
 
-def insert_into_template(template_file: str, new_filename: str, diagram: ET.Element):
+def insert_into_template(template_file: str, new_filename: str, diagram: ET.Element) -> None:
     with open(template_file, "r") as file:
         data = file.read().replace("$TEMPLATE", encode_diagram(diagram))
     
@@ -65,7 +64,7 @@ def add_links_to_groups(diagram: ET.Element) -> None:
         root.remove(child)
         attrs = child.attrib
 
-        user_object = ET.SubElement(root, "UserObject", attrib={"label": "", "link": "https://www.google.com", "id": attrs["id"]})
+        user_object = ET.SubElement(root, "UserObject", attrib={"label": "", "link": "Request:\{\"hello\":1\}", "id": attrs["id"]})
 
         del attrs["id"] # Id is already in the UserObject
         mx_cell = ET.SubElement(user_object, "mxCell", attrib=attrs)
