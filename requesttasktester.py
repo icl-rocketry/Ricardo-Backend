@@ -104,7 +104,7 @@ if __name__ == "__main__":
     sio.connect('http://' + args["host"] + ':' + str(args['port']) + '/',namespaces=['/','/telemetry','/data_request_handler','/messages'])
 
     input("get")
-    sio.emit('clearTasks',namespace='/data_request_handler')
+    sio.emit('getRunningTasks',namespace='/data_request_handler')
     # input("get")
     # sio.emit('newTaskConfig',task_json,namespace='/data_request_handler')
     # input("get")
