@@ -13,14 +13,14 @@ import json
 sio = socketio.Client(logger=True, engineio_logger=True)
 
 task_json = {
-    "task_name": "fc_telemetry_stage3",
+    "task_name": "fc_telemetry",
     "autostart":True,
-    "poll_delta": 2000,
+    "poll_delta": 500,
     "running": True,
     "logger": True,
     "request_config": {
-        "source": 4,
-        "destination": 2,
+        "source": 1,
+        "destination": 0,
         "destination_service": 2,
         "command_id": 8,
         "command_arg": 0
@@ -105,8 +105,8 @@ if __name__ == "__main__":
 
     input("get")
     sio.emit('getRunningTasks',namespace='/data_request_handler')
-    # input("get")
-    # sio.emit('newTaskConfig',task_json,namespace='/data_request_handler')
+    input("get")
+    sio.emit('newTaskConfig',task_json,namespace='/data_request_handler')
     # input("get")
     # sio.emit('getRunningTasks',namespace='/data_request_handler')
     # input("get")

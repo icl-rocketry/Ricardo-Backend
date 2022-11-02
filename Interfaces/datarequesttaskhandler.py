@@ -198,14 +198,14 @@ class DataRequestTaskHandler():
         self.r.lpush("SendQueue",json.dumps(send_data))
     
     def __checkReceiveQueue__(self):
-        lookup_string = 'ReceiveQueue:'+self.client_id_prefix+"*"
-        keylist = list(self.r.scan_iter(lookup_string,1)) #find keys with the prefix 
+        keylist = list(self.r.scan_iter('ReceiveQueue:'+self.client_id_prefix+"*",1)) #find keys with the prefix 
         if keylist: #check we got keys
+           
             key = keylist[0] #only process 1 key at a time
             key_string:str = bytes(key).decode("UTF-8")
-            task_id = key_string[len(lookup_string):]
-
+            task_id = key_string[len('ReceiveQueue:'+self.client_id_prefix):]
             if task_id in self.task_container.keys():
+                
                 self.r.persist(key) #remove key timeout
                 responseData:bytes = self.r.rpop(key)
                 self.publish_new_data(responseData,task_id)

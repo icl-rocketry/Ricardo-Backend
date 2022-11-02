@@ -26,7 +26,7 @@ def on_message(data):
 def on_message(data):
     print(data)
 
-@sio.on('telemetry',namespace='/telemetry')
+@sio.on('fc_telemetry',namespace='/telemetry')
 def on_message(data):
     print(data)  
     print(type(data))  

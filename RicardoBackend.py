@@ -76,8 +76,8 @@ if __name__ == '__main__':
     #check redis server is running
     checkRedis()
 
-    # proclist['serialmanager'] = multiprocessing.Process(target=startSerialManager,args=(argsin,))
-    # proclist['serialmanager'].start()
+    proclist['serialmanager'] = multiprocessing.Process(target=startSerialManager,args=(argsin,))
+    proclist['serialmanager'].start()
     
     #start flask interface process
     proclist['flaskinterface'] = multiprocessing.Process(target=flaskinterface.startFlaskInterface,args=(argsin['flask_host'],
