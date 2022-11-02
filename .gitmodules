@@ -8,6 +8,7 @@
 [submodule "apps/udpAdapter/pylibrnp"]
 	path = apps/udpAdapter/pylibrnp
 	url = git@github.com:icl-rocketry/pylibrnp.git
+
 [submodule "apps/pylibrnp"]
 	path = apps/pylibrnp
 	url = git@github.com:icl-rocketry/pylibrnp.git
