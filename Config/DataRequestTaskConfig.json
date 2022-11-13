@@ -5,6 +5,7 @@
         "poll_delta": 500,
         "running": true,
         "logger": true,
+        "receiveOnly":false,
         "request_config": {
             "source": 1,
             "destination": 0,

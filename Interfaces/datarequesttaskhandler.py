@@ -49,15 +49,24 @@ class DataRequestTask():
 
         if self.config['running']:
     
-            if (time.time_ns() - self.lastReceivedTime > (self.connectionTimeout*MS_TO_NS)):
+            if (time.time_ns() - self.lastReceivedTime > (self.connectionTimeout*MS_TO_NS)): #if connection timed out
                 self.config['connected'] = False
 
+            if (self.config.get('receiveOnly',False)):#receive only mode
+                return None
+
             if (time.time_ns() - self.prevUpdateTime > (self.config["poll_delta"]*MS_TO_NS)):
-                command_packet = defaultpackets.SimpleCommandPacket(command = self.config['request_config']['command_id'],arg=self.config['request_config']['command_arg'])
-                command_packet.header.source = self.config['request_config']['source']
-                command_packet.header.destination = self.config['request_config']['destination']
+                
+                requestConfig = self.get('request_config',None) #check a request config has been provided
+                if requestConfig is None:
+                    print("Error No Request Config")
+                    return None
+                
+                command_packet = defaultpackets.SimpleCommandPacket(command = requestConfig['command_id'],arg=requestConfig['command_arg'])
+                command_packet.header.source = requestConfig['source']
+                command_packet.header.destination = requestConfig['destination']
                 command_packet.header.source_service = 2 #this is not too important
-                command_packet.header.destination_service = self.config['request_config']['destination_service']
+                command_packet.header.destination_service = requestConfig['destination_service']
                 command_packet.header.packet_type = 0 #command packet type is always zero
                 self.prevUpdateTime = time.time_ns()
                 self.config['txCounter'] += 1
@@ -184,7 +193,7 @@ class DataRequestTaskHandler():
         task = self.task_container[task_id]
         decodedData = task.decodeData(data)
         #publish to socketio
-        self.sio.emit(task_id,decodedData,namespace='/telemetry')
+        self.sio.emit("telemetry:"+task_id,decodedData,namespace='/telemetry')
         #publish to redis
         self.r.set("telemetry:"+task_id,json.dumps(decodedData))
 
