@@ -193,8 +193,9 @@ class DataRequestTaskHandler():
         task = self.task_container[task_id]
         decodedData = task.decodeData(data)
         #publish to socketio
-        self.sio.emit("telemetry:"+task_id,decodedData,namespace='/telemetry')
-        #publish to redis
+        self.sio.emit(task_id,decodedData,namespace='/telemetry')
+        #publish to redis -> note the prefix "telemetry:" which is being used to namepsace the key 
+        #to replicate how the data is served in socketio 
         self.r.set("telemetry:"+task_id,json.dumps(decodedData))
 
 

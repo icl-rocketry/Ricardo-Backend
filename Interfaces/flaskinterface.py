@@ -7,7 +7,7 @@ from flask_socketio import SocketIO, emit, send # added emit from flask_socketio
 if __name__ == "__main__":
     from telemetry_webui.telemetry_webui import telemetry_webui_bp
     from command_webui.command_webui import command_webui_bp
-    from datarequesttaskhandler import DataRequestTaskHandler
+    # from datarequesttaskhandler import DataRequestTaskHandler
 else:
     from .telemetry_webui.telemetry_webui import telemetry_webui_bp
     from .command_webui.command_webui import command_webui_bp
