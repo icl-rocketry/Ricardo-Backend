@@ -1,3 +1,15 @@
+import argparse
+import socket
+from serialmanager import SerialManager
+from socketioConnector import SocketioConnector
+from pylibrnp.defaultpackets import SimpleCommandPacket
+import pylibrnp.rnppacket as rnppacket
+import json
+import multiprocessing
+import sys
+import signal
+import time
+import os
 
 import cmd2
 import sys
@@ -8,9 +20,6 @@ from pylibrnp.rnppacket import *
 import argparse
 import time
 import enum
-
-import socketio
-
 
 class ByteRnpPacket(RnpPacket):
     struct_str='<I'
@@ -52,28 +61,18 @@ class NOROUTE_ACTION(enum.Enum):
     DUMP:int=0
     BROADCAST:int=1
 
-
 class NetworkConfigurationTool(cmd2.Cmd):
-    sio = socketio.Client(logger=False, engineio_logger=False)
 
-    def __init__(self,host='localhost',port=1337):
+    def __init__(self,sendQueue,receiveQueue):
         super().__init__(allow_cli_args=False)  
 
+        
         self.source_address = 4
         self.ping_record = {}
-        
 
-        self.sio.connect('http://' + host + ':' + str(port) + '/',namespaces=['/','/command','/messages'])
-        self.sio.on('Response',self.on_response_handler,namespace='/command')  
-
-    #setting up socketio client and event handler
-
-    @sio.event
-    def connect():
-        print("I'm connected!")
-
-
-    # @sio.on('Response',namespace='/command')
+        self.sendQueue = sendQueue
+        self.receiveQueue = receiveQueue
+                
     def on_response_handler(self,data):
         print(data)
         try:
@@ -88,21 +87,7 @@ class NetworkConfigurationTool(cmd2.Cmd):
             self.ping_response_handler(packet)
             # ping response
             
-                
-                
 
-
-            # if header.source_service == 2 and header.packet_type == 100:
-            #     #we have a string message packet
-            #     packet_body = packet[RnpHeader.size:]
-            #     try:
-            #         message = packet_body.decode('UTF-8')
-            #     except:
-            #         message = str(packet_body)
-            #     print("Message: " + message)
-            # if header.packet_type == 1:
-            #     print("got component state")
-                
 
     set_address_ap = Cmd2ArgumentParser()
     set_address_ap.add_argument('-a','--current_address',type=int,help='Node Current Address',default=0)
@@ -177,15 +162,6 @@ class NetworkConfigurationTool(cmd2.Cmd):
         packet = ByteRnpPacket()
         self.send_packet(packet,destination=opts.current_address,packet_type=NETMAN_TYPES.RESET_NETMAN.value)
 
-
-    @sio.event
-    def connect_error(data):
-        print("The connection failed!")
-
-    @sio.event
-    def disconnect():
-        print("I'm disconnected!")
-
     #method for serializing and sending command and its argument
     def send_packet(self,packet,destination,source=None,destination_service = 1,source_service  = 2,packet_type = 0):
         packet.header.source_service = source_service
@@ -197,8 +173,7 @@ class NetworkConfigurationTool(cmd2.Cmd):
         packet.header.source = int(source)
         packet.header.destination = int(destination)
         packet.header.packet_type = int(packet_type)
-        self.sio.emit('send_data',{'data':packet.serialize().hex()},namespace='/command')
-        #Replace this to put the packet on the send Q for the serialmanager / socketio
+        self.sendQueue.put({'data':packet.serialize().hex()})
     
 
 
@@ -273,25 +248,3 @@ class NetworkConfigurationTool(cmd2.Cmd):
                
         except KeyError:
             print("Received Unkown ping response -> cant find " + str(ping_response.header.source) + " in ping record")
-
-
-    # def sigint_handler(self,p1=None,p2=None):
-    #     self.sio.disconnect()
-    #     sys.exit(0)
-
-    def do_quit(self,opts):
-        self.sio.disconnect()
-        return True
-    
-    
-
-ap = argparse.ArgumentParser()
-ap.add_argument('-s',"--source",required=False,type=int,default=4,help='Soure Address of packets')
-
-args = vars(ap.parse_args())
-
-
-if __name__ == "__main__":
-    netconf = NetworkConfigurationTool()
-    netconf.source_address = args['source']
-    netconf.cmdloop()
