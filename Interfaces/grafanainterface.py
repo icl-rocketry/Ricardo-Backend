@@ -30,7 +30,7 @@ async def forward_telemetry(event,data):
     #threadsafe list 
     if (event not in data_queue_dict.keys()):
         data_queue_dict[event] = asyncio.Queue()
-
+ 
     await data_queue_dict[event].put(data)
     
 
@@ -59,7 +59,7 @@ async def main():
 data_queue_dict = {}
 # data_queue = asyncio.Queue()
 
-start_server = websockets.serve(send_to_grafana, 'localhost', 8080)
+start_server = websockets.serve(send_to_grafana, 'localhost', 8080,ping_timeout = None)
 
 asyncio.get_event_loop().run_until_complete(start_server)
 asyncio.get_event_loop().run_until_complete(main())
