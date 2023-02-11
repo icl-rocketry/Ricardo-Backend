@@ -121,21 +121,25 @@ def read_data():
     #     line = data.decode('UTF-8').replace('\n', '')
     #     print(line)
     # elif (useRedis):
+    
     data = r.get("telemetry")
-    telemetry = json.loads(data)
-    # yaw = telemetry['yaw'] * (180/math.pi)
-    # pitch = telemetry['pitch'] * (180/math.pi)
-    # roll = telemetry['roll'] * (180/math.pi)
+    print(data)
     try:
+        telemetry = json.loads(data)
         w = telemetry['q0']
         nx = telemetry['q1']
         ny = telemetry['q2']
         nz = telemetry['q3']
-    except:
+    except Exception as e: 
         w = 1
         nx = 0
         ny = 0
         nz = 0
+        print(e)
+    
+    # yaw = telemetry['yaw'] * (180/math.pi)
+    # pitch = telemetry['pitch'] * (180/math.pi)
+    # roll = telemetry['roll'] * (180/math.pi)
     time.sleep(0.01)
     #return [yaw,pitch,roll]
     return [w, nx, ny, nz]
