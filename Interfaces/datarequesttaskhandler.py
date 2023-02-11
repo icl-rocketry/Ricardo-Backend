@@ -57,7 +57,7 @@ class DataRequestTask():
 
             if (time.time_ns() - self.prevUpdateTime > (self.config["poll_delta"]*MS_TO_NS)):
                 
-                requestConfig = self.get('request_config',None) #check a request config has been provided
+                requestConfig = self.config.get('request_config',None) #check a request config has been provided
                 if requestConfig is None:
                     print("Error No Request Config")
                     return None
@@ -104,6 +104,7 @@ class DataRequestTaskHandler():
 
         # assign functions to events
         self.sio = sio_instance
+
         self.sio.on_event('getRunningTasks',self.on_get_running_tasks,namespace='/data_request_handler')
         self.sio.on_event('newTaskConfig',self.on_new_task_config,namespace='/data_request_handler')
         self.sio.on_event('deleteTaskConfig',self.on_delete_task_config,namespace='/data_request_handler')
@@ -193,7 +194,7 @@ class DataRequestTaskHandler():
         task = self.task_container[task_id]
         decodedData = task.decodeData(data)
         #publish to socketio
-        self.sio.emit(task_id,decodedData,namespace='/telemetry')
+        self.sio.emit(task_id,json.dumps(decodedData),namespace='/telemetry')
         #publish to redis -> note the prefix "telemetry:" which is being used to namepsace the key 
         #to replicate how the data is served in socketio 
         self.r.set("telemetry:"+task_id,json.dumps(decodedData))

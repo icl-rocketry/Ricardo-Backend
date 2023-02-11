@@ -14,8 +14,8 @@ sio = socketio.Client(logger=True, engineio_logger=True)
 
 task_json = {
     "task_name": "fc_telemetry",
-    "autostart":True,
-    "poll_delta": 500,
+    "autostart":False,
+    "poll_delta": 1000,
     "running": True,
     "logger": True,
     "request_config": {
@@ -103,9 +103,9 @@ if __name__ == "__main__":
 
     sio.connect('http://' + args["host"] + ':' + str(args['port']) + '/',namespaces=['/','/telemetry','/data_request_handler','/messages'])
 
-    input("get")
-    sio.emit('getRunningTasks',namespace='/data_request_handler')
-    input("get")
+    # input("get")
+    # sio.emit('getRunningTasks',namespace='/data_request_handler')
+    # input("get")
     sio.emit('newTaskConfig',task_json,namespace='/data_request_handler')
     # input("get")
     # sio.emit('getRunningTasks',namespace='/data_request_handler')

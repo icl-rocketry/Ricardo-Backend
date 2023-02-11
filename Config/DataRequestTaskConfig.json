@@ -1,8 +1,8 @@
 [
     {
         "task_name": "fc_telemetry",
-        "autostart": false,
-        "poll_delta": 500,
+        "autostart": true,
+        "poll_delta": 50,
         "running": true,
         "logger": true,
         "receiveOnly":false,
