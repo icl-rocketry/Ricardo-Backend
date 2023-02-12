@@ -63,8 +63,8 @@ class NetworkConfigurationTool(cmd2.Cmd):
         self.ping_record = {}
         
 
-        self.sio.connect('http://' + host + ':' + str(port) + '/',namespaces=['/','/command','/messages'])
-        self.sio.on('Response',self.on_response_handler,namespace='/command')  
+        self.sio.connect('http://' + host + ':' + str(port) + '/',namespaces=['/','/packet','/messages'])
+        self.sio.on('Response',self.on_response_handler,namespace='/packet')  
 
     #setting up socketio client and event handler
 
@@ -73,7 +73,7 @@ class NetworkConfigurationTool(cmd2.Cmd):
         print("I'm connected!")
 
 
-    # @sio.on('Response',namespace='/command')
+    # @sio.on('Response',namespace='/packet')
     def on_response_handler(self,data):
         print(data)
         try:
@@ -197,7 +197,7 @@ class NetworkConfigurationTool(cmd2.Cmd):
         packet.header.source = int(source)
         packet.header.destination = int(destination)
         packet.header.packet_type = int(packet_type)
-        self.sio.emit('send_data',{'data':packet.serialize().hex()},namespace='/command')
+        self.sio.emit('send_data',{'data':packet.serialize().hex()},namespace='/packet')
     
 
 

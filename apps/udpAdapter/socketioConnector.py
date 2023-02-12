@@ -22,7 +22,7 @@ def connect_error(data):
 def disconnect():
     print("Socketio Disconnected!")
 
-@sio.on('Response',namespace='/command')
+@sio.on('Response',namespace='/packet')
 def on_response_handler(data):
     packet = bytes.fromhex(data['Data'])
     if verbose:
@@ -31,7 +31,7 @@ def on_response_handler(data):
     receiveQueue.put({"data":packet})
     
 
-@sio.on('Error',namespace='/command')
+@sio.on('Error',namespace='/packet')
 def on_error_handler(data):
     print(data)
 
@@ -44,12 +44,12 @@ def SocketioConnector(host,port,sendQ,receiveQ,_verbose):
     sendQueue = sendQ
     receiveQueue = receiveQ
     
-    sio.connect('http://' + str(host) + ":" +str(port),namespaces=['/','/command'])
+    sio.connect('http://' + str(host) + ":" +str(port),namespaces=['/','/packet'])
 
     while True:
         try:
             packet = sendQueue.get_nowait()
-            sio.emit('send_data',{'data':str(bytes(packet['data']).hex())},namespace='/command')
+            sio.emit('send_data',{'data':str(bytes(packet['data']).hex())},namespace='/packet')
         except queue.Empty:
             pass
 

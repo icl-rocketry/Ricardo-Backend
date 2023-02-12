@@ -90,7 +90,7 @@ def on_response_handler(data):
     print(data)
  
 
-@sio.on('Error',namespace='/command')
+@sio.on('Error',namespace='/packet')
 def on_error_handler(data):
     print(data)
 

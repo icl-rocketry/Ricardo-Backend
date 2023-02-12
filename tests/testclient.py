@@ -3,7 +3,7 @@ import socketio
 # standard Python
 sio = socketio.Client(logger=True, engineio_logger=True)
 
-sio.connect('http://localhost:1337/',namespaces=['/','/telemetry','/command'])
+sio.connect('http://localhost:1337/',namespaces=['/','/telemetry','/packet'])
 
 
 @sio.event

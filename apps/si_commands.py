@@ -47,8 +47,8 @@ class CmdUI(cmd2.Cmd):
         self.source_address = 4
         self.component_state_request_record = {}
 
-        self.sio.connect('http://' + host + ':' + str(port) + '/',namespaces=['/','/command','/messages'])  
-        self.sio.on('Response',self.on_response_handler,namespace='/command')  
+        self.sio.connect('http://' + host + ':' + str(port) + '/',namespaces=['/','/packet','/messages'])  
+        self.sio.on('Response',self.on_response_handler,namespace='/packet')  
 
     #setting up socketio client and event handler
 
@@ -114,7 +114,7 @@ class CmdUI(cmd2.Cmd):
         packet.header.source = int(source)
         packet.header.destination = int(destination)
         packet.header.packet_type = int(packet_type)
-        self.sio.emit('send_data',{'data':packet.serialize().hex()},namespace='/command')
+        self.sio.emit('send_data',{'data':packet.serialize().hex()},namespace='/packet')
     
     #sending commands from user
 

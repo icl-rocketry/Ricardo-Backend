@@ -12,7 +12,7 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 sio = socketio.Client(logger=False, engineio_logger=False)
 
-sio.connect('http://localhost:1337/',namespaces=['/','/telemetry','/command'])
+sio.connect('http://localhost:1337/',namespaces=['/','/telemetry','/packet'])
 
 @sio.event
 def connect():

@@ -110,7 +110,7 @@ def get_telemetry():
     args = request.args
     print(args)
     args.to_dict()
-    task_id:str = args.get("task_id")
+    task_id:str = "telemetry:" + args.get("task_id")
     if r is None:
         return '''Redis client not setup in flaskinterface.py, 
         likely you are running the flaskinterface.py directly... 
@@ -141,21 +141,17 @@ def connect_telemetry():
 def connect():
     pass
 
-@socketio.on('connect',namespace='/command')
+@socketio.on('connect',namespace='/packet')
 def connect_command():
     global socketio_clients
     socketio_clients.append(request.sid)
     print("Client : " + request.sid + " joined command...")
     
-    
-
-
-
-@socketio.on('send_data',namespace='/command')
+@socketio.on('send_data',namespace='/packet')
 def send_data_event(data):
     packetData = data
     if 'data' not in packetData.keys():
-        emit('Error',{'Error':'No Data!'},namespace='/command')
+        emit('Error',{'Error':'No Data!'},namespace='/packet')
         return
     
     sendData = {'data':packetData.get('data'),
@@ -163,7 +159,7 @@ def send_data_event(data):
     r.lpush("SendQueue",json.dumps(sendData))
     
 
-@socketio.on('disconnect',namespace='/command')
+@socketio.on('disconnect',namespace='/packet')
 def disconnect_command():
     global socketio_clients
     print("Client : " + request.sid + " left command...")
@@ -199,7 +195,7 @@ def __SocketIOResponseTask__(redishost,redisport):
                 response = {'Data':str(responseData.hex())}
                 print(response)
 
-                socketio.emit('Response',response,to=sid,namespace='/command')
+                socketio.emit('Response',response,to=sid,namespace='/packet')
 
             else:
                 redis_connection.delete(key)#delete the whole receive queue as client is no longer connected     
