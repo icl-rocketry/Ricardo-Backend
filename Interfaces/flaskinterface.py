@@ -106,7 +106,7 @@ def get_response():
 def get_telemetry():
     #get telemetry data from redis db
                 #the telemetry key will be a json object
-    telemetry_data = r.get("telemetry")
+    telemetry_data = r.get("fc_telemetry")
     if telemetry_data is not None:
         return json.loads(telemetry_data),200
     else:
