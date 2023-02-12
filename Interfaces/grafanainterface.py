@@ -56,7 +56,7 @@ async def main():
     await sio.connect('http://localhost:1337/', namespaces=["/telemetry"]) #Todo make the port a variable
     await sio.wait()
 
-data_queue_dict = {}
+data_queue_dict = {} #threadsafe thru gil.. rip
 # data_queue = asyncio.Queue()
 
 start_server = websockets.serve(send_to_grafana, 'localhost', 8080,ping_timeout = None)
