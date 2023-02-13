@@ -87,20 +87,22 @@ def send_packet():
     else:
         return 'Bad Request',400
 
-@app.route('/response', methods=['POST'])
+@app.route('/response', methods=['GET'])
 def get_response():
-    response_data = request.json
-    if response_data == None:
-        return 'Bad Request \nNo Data Posted',400
-    if "clientid" in response_data:
-        key = "ReceiveQueue:" + str(response_data["clientid"])
+    args = request.args
+    args.to_dict()
+
+    clientid = args.get("clientid")
+    
+    if clientid is not None:
+        key = "ReceiveQueue:" + str(clientid)
         if r.llen(key) > 0 :
             received_response :bytes = r.rpop(key)
             return received_response,200
         else:
             return "NODATA",200
     else:
-        return 'Bad Request \nJSON INVALID',400
+        return 'Bad Request \nNo Client ID supplied',400
 
 @app.route('/telemetry', methods=['GET'])
 def get_telemetry():
