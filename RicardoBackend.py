@@ -24,7 +24,6 @@ ap.add_argument("--flask-port", required=False, help="flask Port", type=int,defa
 ap.add_argument("-v", "--verbose", required=False, help="Enable Verbose Mode", action='store_true')
 ap.add_argument("--redis-host", required=False, help="redis host", type=str,default = "localhost")
 ap.add_argument("--redis-port", required=False, help="redis port", type=int,default = 6379)
-ap.add_argument('-l','--logger', required=False, help="Enable Telemetry logging",action='store_true',default=False)
 ap.add_argument('-mon','--monitor', required=False, help="Enable network monitoring ",action='store_true',default=False)
 ap.add_argument('-monip','--monitor-ip', required=False, help="Set network monitoring ip",type=str,default = "127.0.0.1")
 ap.add_argument('-monport','--monitor-port', required=False, help="Set network monitoring port",type=int,default = 7000)
@@ -64,13 +63,6 @@ def startSerialManager(args):
     serman.run()
 
 
-def startTelemetryLogger(args):
-    logger = telemetrylogger.TelemetryLogger(redishost=args['redis_host'],
-                                                 redisport=args['redis_port'],
-                                                 filename="telemetry_log")
-    logger.run()
-
-
 if __name__ == '__main__':
     proclist = {}
     #check redis server is running
@@ -86,12 +78,7 @@ if __name__ == '__main__':
                                                                                             argsin['redis_port'],))
     proclist['flaskinterface'].start()
 
-
-    if (argsin['logger']):
-        proclist['telemetrylogger'] = multiprocessing.Process(target=startTelemetryLogger,args=(argsin,))
-        proclist['telemetrylogger'].start()
     
-
     c = commandlineinterface.CommandLineInterface(redishost=argsin['redis_host'],
                                                     redisport=argsin['redis_port'],
                                                     )
