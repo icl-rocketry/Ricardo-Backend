@@ -59,7 +59,7 @@ def on_message(data):
                            data["alt"],
                            data["baro_temp"],
                            data["baro_press"],
-                           data["rssi"])
+                            data["rssi"])
     sock.sendto(udp_data, (IP, UDP_PORT))
 
 def exithandler(sig=None,frame=None):

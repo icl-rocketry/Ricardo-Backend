@@ -10,8 +10,7 @@ from Interfaces import flaskinterface
 from Interfaces import datarequesttaskhandler
 
 from RicardoHandler import serialmanager
-from RicardoHandler import telemetryhandler
-from RicardoHandler import telemetrylogger
+
 
 
 
