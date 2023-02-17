@@ -5,7 +5,7 @@ import json
 
 sio = socketio.Client(logger=False, engineio_logger=False)
 
-@sio.on('message',namespace='/messages')
+@sio.on('new_message',namespace='/messages')
 def on_message_handler(data_str):
     data = json.loads(data_str)
     head = data["header"]

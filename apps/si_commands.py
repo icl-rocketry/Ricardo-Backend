@@ -205,6 +205,12 @@ class CmdUI(cmd2.Cmd):
     def do_component(self,opts):
         self.component(opts)
 
+    def do_launch(self,opts):
+        self.send_cmd(source=self.source_address,destination=5,command_num=2,arg=180,destination_service=10)
+        time.sleep(0.2)
+        self.send_cmd(source=self.source_address,destination=6,command_num=2,arg=5000,destination_service=13)
+       
+
 
     def component(self,opts):
 
@@ -245,9 +251,9 @@ class CmdUI(cmd2.Cmd):
             opts.service = 13
             self.component(opts)
 
-    #launch command
-    def do_launch(self,opts):
-        self.send_cmd(source = self.source_address,destination = 2,command_num=1,arg=0)
+    # #launch command
+    # def do_launch(self,opts):
+    #     self.send_cmd(source = self.source_address,destination = 2,command_num=1,arg=0)
 
     def do_debug(self,opts):
         self.send_cmd(source=self.source_address,destination =2,command_num=100,arg=0)

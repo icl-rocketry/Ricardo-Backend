@@ -35,7 +35,7 @@ class EmitterClass():
             if external:
                 # emit socketio signal
                 print("Emitting package " + str(self.index))
-                socketio.emit("telemetry", package, namespace="/telemetry")
+                socketio.emit("fc_telemetry", package, namespace="/telemetry")
             else:
                 # print package when emitted
                 print(package)

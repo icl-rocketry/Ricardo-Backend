@@ -3,9 +3,11 @@ import argparse
 import signal
 import sys
 import redis
+import time
 
 from Interfaces import commandlineinterface
 from Interfaces import flaskinterface
+from Interfaces import datarequesttaskhandler
 
 from RicardoHandler import serialmanager
 from RicardoHandler import telemetryhandler
@@ -61,17 +63,13 @@ def startSerialManager(args):
                                      verbose=args['verbose'])
     serman.run()
 
-def startTelemetryHandler(args,taskid):
-    telemetrytask = telemetryhandler.TelemetryHandler(redishost = args["redis_host"],
-                                                      redisport=args["redis_port"],
-                                                      clientid=taskid)
-    telemetrytask.run()
 
 def startTelemetryLogger(args):
     logger = telemetrylogger.TelemetryLogger(redishost=args['redis_host'],
                                                  redisport=args['redis_port'],
                                                  filename="telemetry_log")
     logger.run()
+
 
 if __name__ == '__main__':
     proclist = {}
@@ -80,13 +78,6 @@ if __name__ == '__main__':
 
     proclist['serialmanager'] = multiprocessing.Process(target=startSerialManager,args=(argsin,))
     proclist['serialmanager'].start()
-
-
-    #start telemetry handler process
-    telemetrytask_id = "LOCAL:TELEMETRYTASK"
-    proclist['telemetryhandler'] = multiprocessing.Process(target=startTelemetryHandler,args=(argsin,telemetrytask_id,))
-    proclist['telemetryhandler'].start()
-
     
     #start flask interface process
     proclist['flaskinterface'] = multiprocessing.Process(target=flaskinterface.startFlaskInterface,args=(argsin['flask_host'],
