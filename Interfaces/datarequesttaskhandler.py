@@ -10,6 +10,8 @@ from pylibrnp import dynamic_rnp_packet_generator as drpg
 import csv
 import sys
 import signal
+from datetime import datetime
+
 
 MS_TO_NS = 1e6
 class DataRequestTask():
@@ -22,17 +24,16 @@ class DataRequestTask():
         self.connectionTimeout = 5000 #in ms
         self.lastReceivedTime = 0
 
+        
+        self.fileName = "Logs/"+self.config['task_name']+"_"+datetime.now().strftime("%d_%m_%y_%H_%M_%S_%f")+'.csv'
+
         newFile=False
 
-        try:
-            self.logfile = open("Logs/"+self.config['task_name']+'.csv','x')
-            newFile = True
-        except FileExistsError:
-            self.logfile = open("Logs/"+self.config['task_name']+'.csv','a')
-        self.csv_writer = csv.DictWriter(self.logfile,fieldnames=self.packet_class().packetvars)
 
-        if newFile:
-            self.csv_writer.writeheader()
+        self.logfile = open(self.fileName,'x')
+
+        self.csv_writer = csv.DictWriter(self.logfile,fieldnames=self.packet_class().packetvars)
+        self.csv_writer.writeheader()
 
         self.prevUpdateTime = 0
     
