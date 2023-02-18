@@ -47,8 +47,8 @@ class CmdUI(cmd2.Cmd):
         self.source_address = 4
         self.component_state_request_record = {}
 
-        self.sio.connect('http://' + host + ':' + str(port) + '/',namespaces=['/','/command','/messages'])  
-        self.sio.on('Response',self.on_response_handler,namespace='/command')  
+        self.sio.connect('http://' + host + ':' + str(port) + '/',namespaces=['/','/packet','/messages'])  
+        self.sio.on('Response',self.on_response_handler,namespace='/packet')  
 
     #setting up socketio client and event handler
 
@@ -114,7 +114,7 @@ class CmdUI(cmd2.Cmd):
         packet.header.source = int(source)
         packet.header.destination = int(destination)
         packet.header.packet_type = int(packet_type)
-        self.sio.emit('send_data',{'data':packet.serialize().hex()},namespace='/command')
+        self.sio.emit('send_data',{'data':packet.serialize().hex()},namespace='/packet')
     
     #sending commands from user
 
@@ -205,10 +205,10 @@ class CmdUI(cmd2.Cmd):
     def do_component(self,opts):
         self.component(opts)
 
-    def do_launch(self,opts):
-        self.send_cmd(source=self.source_address,destination=5,command_num=2,arg=180,destination_service=10)
-        time.sleep(0.2)
-        self.send_cmd(source=self.source_address,destination=6,command_num=2,arg=5000,destination_service=13)
+    # def do_launch(self,opts):
+    #     self.send_cmd(source=self.source_address,destination=5,command_num=2,arg=180,destination_service=10)
+    #     time.sleep(0.2)
+    #     self.send_cmd(source=self.source_address,destination=6,command_num=2,arg=5000,destination_service=13)
        
 
 
@@ -251,9 +251,9 @@ class CmdUI(cmd2.Cmd):
             opts.service = 13
             self.component(opts)
 
-    # #launch command
-    # def do_launch(self,opts):
-    #     self.send_cmd(source = self.source_address,destination = 2,command_num=1,arg=0)
+    #launch command
+    def do_launch(self,opts):
+        self.send_cmd(source = self.source_address,destination = 2,command_num=1,arg=0)
 
     def do_debug(self,opts):
         self.send_cmd(source=self.source_address,destination =2,command_num=100,arg=0)

@@ -2,9 +2,10 @@
     {
         "task_name": "fc_telemetry",
         "autostart": true,
-        "poll_delta": 500,
+        "poll_delta": 100,
         "running": true,
         "logger": true,
+        "receiveOnly":false,
         "request_config": {
             "source": 1,
             "destination": 0,
@@ -64,3 +65,4 @@
         "lastReceivedPacket": ""
     }
 ]
+

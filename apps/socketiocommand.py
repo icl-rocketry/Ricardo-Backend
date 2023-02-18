@@ -24,7 +24,7 @@ def connect_error(data):
 def disconnect():
     print("I'm disconnected!")
 
-@sio.on('Response',namespace='/command')
+@sio.on('Response',namespace='/packet')
 def on_response_handler(data):
     print(data)
     try:
@@ -43,7 +43,7 @@ def on_response_handler(data):
     except:
         print("Failed to decode header")
 
-@sio.on('Error',namespace='/command')
+@sio.on('Error',namespace='/packet')
 def on_error_handler(data):
     print(data)
 
@@ -54,7 +54,7 @@ if __name__ == "__main__":
     ap.add_argument("--port", required=False, help="backend port", type=int,default = 1337)
     args = vars(ap.parse_args())
 
-    sio.connect('http://' + args["host"] + ':' + str(args['port']) + '/',namespaces=['/','/telemetry','/command','/messages'])
+    sio.connect('http://' + args["host"] + ':' + str(args['port']) + '/',namespaces=['/','/telemetry','/packet','/messages'])
 
     while True:
         source = input("source node : ")
@@ -71,5 +71,5 @@ if __name__ == "__main__":
         cmd_packet.header.destination = int(destination)
         cmd_packet.header.packet_type = 0
         serializedPacket:str = cmd_packet.serialize().hex()
-        sio.emit('send_data',{'data':serializedPacket},namespace='/command')
+        sio.emit('send_data',{'data':serializedPacket},namespace='/packet')
     

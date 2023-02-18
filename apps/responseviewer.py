@@ -12,22 +12,18 @@ ap.add_argument("-p",'--port',required=False,help='port',type=str,default=1337)
 
 args = vars(ap.parse_args())
 
-url = "http://" + args["address"] +":" + str(args["port"]) + "/response"
+url = "http://" + args["address"] +":" + str(args["port"]) + "/response?clientid="+args['id']
 
 prevtime = 0
 checkDelta = .5
 
-payload = {
-        "clientid":args["id"]
-    }
-    
 
 
 if __name__ == '__main__':
     while True:
         if (time.time() - prevtime > checkDelta):
             prevtime=time.time()
-            r = requests.post(url,json=payload)
+            r = requests.get(url)
             if (r.status_code is 200 and r.text != "NODATA"):
                 data = r.content
                 print(data)

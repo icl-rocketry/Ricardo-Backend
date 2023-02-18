@@ -7,7 +7,7 @@ from flask_socketio import SocketIO, emit, send # added emit from flask_socketio
 if __name__ == "__main__":
     from telemetry_webui.telemetry_webui import telemetry_webui_bp
     from command_webui.command_webui import command_webui_bp
-    from datarequesttaskhandler import DataRequestTaskHandler
+    # from datarequesttaskhandler import DataRequestTaskHandler
 else:
     from .telemetry_webui.telemetry_webui import telemetry_webui_bp
     from .command_webui.command_webui import command_webui_bp
@@ -87,36 +87,48 @@ def send_packet():
     else:
         return 'Bad Request',400
 
-@app.route('/response', methods=['POST'])
+@app.route('/response', methods=['GET'])
 def get_response():
-    response_data = request.json
-    if response_data == None:
-        return 'Bad Request \nNo Data Posted',400
-    if "clientid" in response_data:
-        key = "ReceiveQueue:" + str(response_data["clientid"])
+    args = request.args
+    args.to_dict()
+
+    clientid = args.get("clientid")
+    
+    if clientid is not None:
+        key = "ReceiveQueue:" + str(clientid)
         if r.llen(key) > 0 :
             received_response :bytes = r.rpop(key)
             return received_response,200
         else:
             return "NODATA",200
     else:
-        return 'Bad Request \nJSON INVALID',400
+        return 'Bad Request \nNo Client ID supplied',400
 
 @app.route('/telemetry', methods=['GET'])
 def get_telemetry():
     #get telemetry data from redis db
-                #the telemetry key will be a json object
-    telemetry_data = r.get("telemetry")
+    #the telemetry key will be a json object
+    #prcess the request args to retrieve task_id
+    args = request.args
+    print(args)
+    args.to_dict()
+    task_id:str = "telemetry:" + args.get("task_id")
+    if r is None:
+        return '''Redis client not setup in flaskinterface.py, 
+        likely you are running the flaskinterface.py directly... 
+        If you aren't, check that redis is running and is correctly 
+        being setup when flaskinterface is being called''',503
+    telemetry_data = r.get(task_id)
     if telemetry_data is not None:
         return json.loads(telemetry_data),200
     else:
         return "NODATA",200
 
-@app.route("/graph",methods=['get'])
+@app.route("/graph",methods=['get']) # -> depreciated, prefer using flask blueprints to serve
 def get_graph():
     return render_template('graph.html',x_window = 100)
 
-@app.route("/map",methods=['get'])
+@app.route("/map",methods=['get']) # -> depreciated, prefer using flask blueprints to serve
 def get_map():
     return render_template('map.html',x_window = 100)
 
@@ -131,21 +143,17 @@ def connect_telemetry():
 def connect():
     pass
 
-@socketio.on('connect',namespace='/command')
+@socketio.on('connect',namespace='/packet')
 def connect_command():
     global socketio_clients
     socketio_clients.append(request.sid)
     print("Client : " + request.sid + " joined command...")
     
-    
-
-
-
-@socketio.on('send_data',namespace='/command')
+@socketio.on('send_data',namespace='/packet')
 def send_data_event(data):
     packetData = data
     if 'data' not in packetData.keys():
-        emit('Error',{'Error':'No Data!'},namespace='/command')
+        emit('Error',{'Error':'No Data!'},namespace='/packet')
         return
     
     sendData = {'data':packetData.get('data'),
@@ -153,7 +161,7 @@ def send_data_event(data):
     r.lpush("SendQueue",json.dumps(sendData))
     
 
-@socketio.on('disconnect',namespace='/command')
+@socketio.on('disconnect',namespace='/packet')
 def disconnect_command():
     global socketio_clients
     print("Client : " + request.sid + " left command...")
@@ -189,7 +197,7 @@ def __SocketIOResponseTask__(redishost,redisport):
                 response = {'Data':str(responseData.hex())}
                 print(response)
 
-                socketio.emit('Response',response,to=sid,namespace='/command')
+                socketio.emit('Response',response,to=sid,namespace='/packet')
 
             else:
                 redis_connection.delete(key)#delete the whole receive queue as client is no longer connected     

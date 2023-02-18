@@ -12,7 +12,7 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 sio = socketio.Client(logger=False, engineio_logger=False)
 
-sio.connect('http://localhost:1337/',namespaces=['/','/telemetry','/command'])
+sio.connect('http://localhost:1337/',namespaces=['/','/telemetry','/packet'])
 
 @sio.event
 def connect():
@@ -59,7 +59,7 @@ def on_message(data):
                            data["alt"],
                            data["baro_temp"],
                            data["baro_press"],
-                           data["rssi"])
+                            data["rssi"])
     sock.sendto(udp_data, (IP, UDP_PORT))
 
 def exithandler(sig=None,frame=None):

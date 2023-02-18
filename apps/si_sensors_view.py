@@ -29,11 +29,11 @@ def get_sensor_update_thread(sio,source_address,dt):
         get_sensor_values.header.source = int(source_address)
         get_sensor_values.header.destination = flight_sensor_board_address
 
-        sio.emit('send_data',{'data':get_sensor_values.serialize().hex()},namespace='/command')
+        sio.emit('send_data',{'data':get_sensor_values.serialize().hex()},namespace='/packet')
         
         get_sensor_values.header.destination = ground_sensor_board_address
 
-        sio.emit('send_data',{'data':get_sensor_values.serialize().hex()},namespace='/command')
+        sio.emit('send_data',{'data':get_sensor_values.serialize().hex()},namespace='/packet')
         
         time.sleep(dt/1000)
     print('process killed')
@@ -52,8 +52,8 @@ class SI_Sensor_View(cmd2.Cmd):
         self.sensor_data = {}
         
 
-        self.sio.connect('http://' + host + ':' + str(port) + '/',namespaces=['/','/command','/messages'])
-        self.sio.on('Response',self.on_response_handler,namespace='/command')  
+        self.sio.connect('http://' + host + ':' + str(port) + '/',namespaces=['/','/packet','/messages'])
+        self.sio.on('Response',self.on_response_handler,namespace='/packet')  
 
     #setting up socketio client and event handler
 
@@ -62,7 +62,7 @@ class SI_Sensor_View(cmd2.Cmd):
         print("I'm connected!")
 
 
-    # @sio.on('Response',namespace='/command')
+    # @sio.on('Response',namespace='/packet')
     def on_response_handler(self,data):
         print(data)
         try:
@@ -124,7 +124,7 @@ class SI_Sensor_View(cmd2.Cmd):
         packet.header.source = int(source)
         packet.header.destination = int(destination)
         packet.header.packet_type = int(packet_type)
-        self.sio.emit('send_data',{'data':packet.serialize().hex()},namespace='/command')
+        self.sio.emit('send_data',{'data':packet.serialize().hex()},namespace='/packet')
     
     
     def do_quit(self,opts):

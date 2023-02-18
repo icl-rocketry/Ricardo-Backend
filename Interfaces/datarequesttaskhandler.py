@@ -10,6 +10,8 @@ from pylibrnp import dynamic_rnp_packet_generator as drpg
 import csv
 import sys
 import signal
+from datetime import datetime
+
 
 MS_TO_NS = 1e6
 class DataRequestTask():
@@ -22,17 +24,16 @@ class DataRequestTask():
         self.connectionTimeout = 5000 #in ms
         self.lastReceivedTime = 0
 
+        
+        self.fileName = "Logs/"+self.config['task_name']+"_"+datetime.now().strftime("%d_%m_%y_%H_%M_%S_%f")+'.csv'
+
         newFile=False
 
-        try:
-            self.logfile = open("Logs/"+self.config['task_name']+'.csv','x')
-            newFile = True
-        except FileExistsError:
-            self.logfile = open("Logs/"+self.config['task_name']+'.csv','a')
-        self.csv_writer = csv.DictWriter(self.logfile,fieldnames=self.packet_class().packetvars)
 
-        if newFile:
-            self.csv_writer.writeheader()
+        self.logfile = open(self.fileName,'x')
+
+        self.csv_writer = csv.DictWriter(self.logfile,fieldnames=self.packet_class().packetvars)
+        self.csv_writer.writeheader()
 
         self.prevUpdateTime = 0
     
@@ -49,15 +50,24 @@ class DataRequestTask():
 
         if self.config['running']:
     
-            if (time.time_ns() - self.lastReceivedTime > (self.connectionTimeout*MS_TO_NS)):
+            if (time.time_ns() - self.lastReceivedTime > (self.connectionTimeout*MS_TO_NS)): #if connection timed out
                 self.config['connected'] = False
 
+            if (self.config.get('receiveOnly',False)):#receive only mode
+                return None
+
             if (time.time_ns() - self.prevUpdateTime > (self.config["poll_delta"]*MS_TO_NS)):
-                command_packet = defaultpackets.SimpleCommandPacket(command = self.config['request_config']['command_id'],arg=self.config['request_config']['command_arg'])
-                command_packet.header.source = self.config['request_config']['source']
-                command_packet.header.destination = self.config['request_config']['destination']
+                
+                requestConfig = self.config.get('request_config',None) #check a request config has been provided
+                if requestConfig is None:
+                    print("Error No Request Config")
+                    return None
+                
+                command_packet = defaultpackets.SimpleCommandPacket(command = requestConfig['command_id'],arg=requestConfig['command_arg'])
+                command_packet.header.source = requestConfig['source']
+                command_packet.header.destination = requestConfig['destination']
                 command_packet.header.source_service = 2 #this is not too important
-                command_packet.header.destination_service = self.config['request_config']['destination_service']
+                command_packet.header.destination_service = requestConfig['destination_service']
                 command_packet.header.packet_type = 0 #command packet type is always zero
                 self.prevUpdateTime = time.time_ns()
                 self.config['txCounter'] += 1
@@ -95,6 +105,7 @@ class DataRequestTaskHandler():
 
         # assign functions to events
         self.sio = sio_instance
+
         self.sio.on_event('getRunningTasks',self.on_get_running_tasks,namespace='/data_request_handler')
         self.sio.on_event('newTaskConfig',self.on_new_task_config,namespace='/data_request_handler')
         self.sio.on_event('deleteTaskConfig',self.on_delete_task_config,namespace='/data_request_handler')
@@ -184,8 +195,9 @@ class DataRequestTaskHandler():
         task = self.task_container[task_id]
         decodedData = task.decodeData(data)
         #publish to socketio
-        self.sio.emit(task_id,decodedData,namespace='/telemetry')
-        #publish to redis
+        self.sio.emit(task_id,json.dumps(decodedData),namespace='/telemetry')
+        #publish to redis -> note the prefix "telemetry:" which is being used to namepsace the key 
+        #to replicate how the data is served in socketio 
         self.r.set("telemetry:"+task_id,json.dumps(decodedData))
 
 
