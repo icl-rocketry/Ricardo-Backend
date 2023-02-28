@@ -1,0 +1,77 @@
+{
+  "aggregation": "current",
+  "alias": "myRule",
+  "colors": [
+    "rgba(50, 172, 45, 0.97)",
+    "rgba(237, 129, 40, 0.89)",
+    "rgba(245, 54, 54, 0.9)"
+  ],
+  "column": "rssi",
+  "dateFormat": "YYYY-MM-DD HH:mm:ss",
+  "decimals": 2,
+  "eventData": [
+    {
+      "eventOn": 0,
+      "hidden": false,
+      "pattern": "8FXi46B6WOVRabY5zH1S-96",
+      "style": "blink",
+      "value": "500"
+    }
+  ],
+  "eventProp": "id",
+  "eventRegEx": false,
+  "gradient": true,
+  "hidden": false,
+  "invert": true,
+  "linkData": [],
+  "linkProp": "id",
+  "linkRegEx": true,
+  "mappingType": 1,
+  "metricType": "table",
+  "order": 1,
+  "overlayIcon": false,
+  "pattern": "/.*/",
+  "rangeData": [],
+  "reduce": true,
+  "refId": "A",
+  "sanitize": false,
+  "shapeData": [
+    {
+      "colorOn": "a",
+      "hidden": false,
+      "pattern": "8FXi46B6WOVRabY5zH1S-89",
+      "style": "fillColor"
+    },
+    {
+      "colorOn": "a",
+      "hidden": false,
+      "pattern": "8FXi46B6WOVRabY5zH1S-347",
+      "style": "fillColor"
+    }
+  ],
+  "shapeProp": "id",
+  "shapeRegEx": true,
+  "stringThresholds": [
+    "/.*/",
+    "/.*/"
+  ],
+  "textData": [],
+  "textProp": "id",
+  "textRegEx": true,
+  "thresholds": [
+    -105,
+    -110
+  ],
+  "tooltip": true,
+  "tooltipColors": false,
+  "tooltipLabel": "",
+  "tooltipOn": "a",
+  "tpDirection": "v",
+  "tpGraph": true,
+  "tpGraphScale": "linear",
+  "tpGraphSize": "100%",
+  "tpGraphType": "line",
+  "type": "number",
+  "unit": "short",
+  "valueData": []
+}

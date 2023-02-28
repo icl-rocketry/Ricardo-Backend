@@ -1,0 +1,318 @@
+{
+    "__inputs": [
+        {
+            "name": "DS_FC_TELEM",
+            "label": "fc_telem",
+            "description": "",
+            "type": "datasource",
+            "pluginId": "golioth-websocket-datasource",
+            "pluginName": "WebSocket API"
+        }
+    ],
+    "__elements": {},
+    "__requires": [
+        {
+            "type": "panel",
+            "id": "agenty-flowcharting-panel",
+            "name": "FlowCharting",
+            "version": "0.9.1"
+        },
+        {
+            "type": "datasource",
+            "id": "golioth-websocket-datasource",
+            "name": "WebSocket API",
+            "version": "1.0.1"
+        },
+        {
+            "type": "grafana",
+            "id": "grafana",
+            "name": "Grafana",
+            "version": "9.3.2"
+        },
+        {
+            "type": "panel",
+            "id": "timeseries",
+            "name": "Time series",
+            "version": ""
+        }
+    ],
+    "annotations": {
+        "list": [
+            {
+                "builtIn": 1,
+                "datasource": {
+                    "type": "grafana",
+                    "uid": "-- Grafana --"
+                },
+                "enable": true,
+                "hide": true,
+                "iconColor": "rgba(0, 211, 255, 1)",
+                "name": "Annotations & Alerts",
+                "target": {
+                    "limit": 100,
+                    "matchAny": false,
+                    "tags": [],
+                    "type": "dashboard"
+                },
+                "type": "dashboard"
+            }
+        ]
+    },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "id": null,
+    "links": [],
+    "liveNow": false,
+    "panels": [
+        {
+            "datasource": {
+                "type": "golioth-websocket-datasource",
+                "uid": "${DS_FC_TELEM}"
+            },
+            "flowchartsData": {
+                "flowcharts": [
+                    {
+                        "allowDrawio": false,
+                        "center": true,
+                        "csv": "## See more information for the syntax at https://drawio-app.com/import-from-csv-to-drawio/\n##\n## Example CSV. Use ## for comments and # for configuration.\n## The following names are reserved and should not be used (or ignored):\n## id, tooltip, placeholder(s), link and label (see below)\n##\n#\n## Node label with placeholders and HTML.\n## Default is '%name_of_first_column%'.\n#\n# label: %name%<br><i style=\"color:gray;\">%position%</i><br><a href=\"mailto:%email%\">Email</a>\n#\n## Node style (placeholders are replaced once).\n## Default is the current style for nodes.\n#\n# style: label;image=%image%;whiteSpace=wrap;html=1;rounded=1;fillColor=%fill%;strokeColor=%stroke%;\n#\n## Parent style for nodes with child nodes (placeholders are replaced once).\n#\n# parentstyle: swimlane;whiteSpace=wrap;html=1;childLayout=stackLayout;horizontal=1;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=1;\n#\n## Optional column name that contains a reference to a named style in styles.\n## Default is the current style for nodes.\n#\n# stylename: -\n#\n## JSON for named styles of the form {\"name\": \"style\", \"name\": \"style\"} where style is a cell style with\n## placeholders that are replaced once.\n#\n# styles: -\n#\n## Optional column name that contains a reference to a named label in labels.\n## Default is the current label.\n#\n# labelname: -\n#\n## JSON for named labels of the form {\"name\": \"label\", \"name\": \"label\"} where label is a cell label with\n## placeholders.\n#\n# labels: -\n#\n## Uses the given column name as the identity for cells (updates existing cells).\n## Default is no identity (empty value or -).\n#\n# identity: -\n#\n## Uses the given column name as the parent reference for cells. Default is no parent (empty or -).\n## The identity above is used for resolving the reference so it must be specified.\n#\n# parent: -\n#\n## Adds a prefix to the identity of cells to make sure they do not collide with existing cells (whose\n## IDs are numbers from 0..n, sometimes with a GUID prefix in the context of realtime collaboration).\n## Default is csvimport-.\n#\n# namespace: csvimport-\n#\n## Connections between rows (\"from\": source colum, \"to\": target column).\n## Label, style and invert are optional. Defaults are '', current style and false.\n## If placeholders are used in the style, they are replaced with data from the source.\n## An optional placeholders can be set to target to use data from the target instead.\n## In addition to label, an optional fromlabel and tolabel can be used to name the column\n## that contains the text for the label in the edges source or target (invert ignored).\n## The label is concatenated in the form fromlabel + label + tolabel if all are defined.\n## The target column may contain a comma-separated list of values.\n## Multiple connect entries are allowed.\n#\n# connect: {\"from\": \"manager\", \"to\": \"name\", \"invert\": true, \"label\": \"manages\", \\\n#          \"style\": \"curved=1;endArrow=blockThin;endFill=1;fontSize=11;\"}\n# connect: {\"from\": \"refs\", \"to\": \"id\", \"style\": \"curved=1;fontSize=11;\"}\n#\n## Node x-coordinate. Possible value is a column name. Default is empty. Layouts will\n## override this value.\n#\n# left: \n#\n## Node y-coordinate. Possible value is a column name. Default is empty. Layouts will\n## override this value.\n#\n# top: \n#\n## Node width. Possible value is a number (in px), auto or an @ sign followed by a column\n## name that contains the value for the width. Default is auto.\n#\n# width: auto\n#\n## Node height. Possible value is a number (in px), auto or an @ sign followed by a column\n## name that contains the value for the height. Default is auto.\n#\n# height: auto\n#\n## Padding for autosize. Default is 0.\n#\n# padding: -12\n#\n## Comma-separated list of ignored columns for metadata. (These can be\n## used for connections and styles but will not be added as metadata.)\n#\n# ignore: id,image,fill,stroke,refs,manager\n#\n## Column to be renamed to link attribute (used as link).\n#\n# link: url\n#\n## Spacing between nodes. Default is 40.\n#\n# nodespacing: 40\n#\n## Spacing between levels of hierarchical layouts. Default is 100.\n#\n# levelspacing: 100\n#\n## Spacing between parallel edges. Default is 40. Use 0 to disable.\n#\n# edgespacing: 40\n#\n## Name or JSON of layout. Possible values are auto, none, verticaltree, horizontaltree,\n## verticalflow, horizontalflow, organic, circle or a JSON string as used in Layout, Apply.\n## Default is auto.\n#\n# layout: auto\n#\n## ---- CSV below this line. First line are column names. ----\nname,position,id,location,manager,email,fill,stroke,refs,url,image\nEvan Miller,CFO,emi,Office 1,,me@example.com,#dae8fc,#6c8ebf,,https://www.draw.io,https://cdn3.iconfinder.com/data/icons/user-avatars-1/512/users-9-2-128.png\nEdward Morrison,Brand Manager,emo,Office 2,Evan Miller,me@example.com,#d5e8d4,#82b366,,https://www.draw.io,https://cdn3.iconfinder.com/data/icons/user-avatars-1/512/users-10-3-128.png\nRon Donovan,System Admin,rdo,Office 3,Evan Miller,me@example.com,#d5e8d4,#82b366,\"emo,tva\",https://www.draw.io,https://cdn3.iconfinder.com/data/icons/user-avatars-1/512/users-2-128.png\nTessa Valet,HR Director,tva,Office 4,Evan Miller,me@example.com,#d5e8d4,#82b366,,https://www.draw.io,https://cdn3.iconfinder.com/data/icons/user-avatars-1/512/users-3-128.png\n",
+                        "download": false,
+                        "editorTheme": "dark",
+                        "editorUrl": "https://www.draw.io",
+                        "enableAnim": true,
+                        "grid": false,
+                        "lock": true,
+                        "name": "Main",
+                        "scale": true,
+                        "tooltip": true,
+                        "type": "xml",
+                        "url": "",
+                        "xml": "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",
+                        "zoom": "100%"
+                    }
+                ]
+            },
+            "format": "short",
+            "graphId": "flowchart_2",
+            "gridPos": {
+                "h": 15,
+                "w": 12,
+                "x": 0,
+                "y": 0
+            },
+            "id": 2,
+            "newFlag": false,
+            "rulesData": {
+                "rulesData": {
+                    "rssi": {
+                        "aggregation": "current",
+                        "alias": "rssi",
+                        "colors": [
+                            "rgba(50, 172, 45, 0.97)",
+                            "rgba(237, 129, 40, 0.89)",
+                            "rgba(245, 54, 54, 0.9)"
+                        ],
+                        "column": "rssi",
+                        "dateFormat": "YYYY-MM-DD HH:mm:ss",
+                        "decimals": 2,
+                        "eventData": [
+                            {
+                                "hidden": false,
+                                "pattern": "8FXi46B6WOVRabY5zH1S-406",
+                                "style": "blink",
+                                "value": 500,
+                                "eventOn": 0
+                            }
+                        ],
+                        "eventProp": "id",
+                        "eventRegEx": false,
+                        "gradient": true,
+                        "hidden": false,
+                        "invert": false,
+                        "linkData": [],
+                        "linkProp": "id",
+                        "linkRegEx": true,
+                        "mappingType": 1,
+                        "metricType": "table",
+                        "order": 1,
+                        "overlayIcon": false,
+                        "pattern": "/.*/",
+                        "rangeData": [],
+                        "reduce": true,
+                        "refId": "A",
+                        "sanitize": false,
+                        "shapeData": [],
+                        "shapeProp": "id",
+                        "shapeRegEx": true,
+                        "stringThresholds": [
+                            "/.*/",
+                            "/.*/"
+                        ],
+                        "textData": [],
+                        "textProp": "id",
+                        "textRegEx": true,
+                        "thresholds": [
+                            -105,
+                            -100
+                        ],
+                        "tooltip": true,
+                        "tooltipColors": false,
+                        "tooltipLabel": "",
+                        "tooltipOn": "a",
+                        "tpDirection": "v",
+                        "tpGraph": true,
+                        "tpGraphScale": "linear",
+                        "tpGraphSize": "100%",
+                        "tpGraphType": "line",
+                        "type": "number",
+                        "unit": "short",
+                        "valueData": []
+                    }
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "golioth-websocket-datasource",
+                        "uid": "${DS_FC_TELEM}"
+                    },
+                    "fields": [
+                        {
+                            "jsonPath": "$.data.rssi",
+                            "language": "jsonpath",
+                            "name": ""
+                        }
+                    ],
+                    "path": "/fc_telemetry",
+                    "refId": "A",
+                    "withStreaming": true
+                }
+            ],
+            "title": "P&ID Test",
+            "transparent": true,
+            "type": "agenty-flowcharting-panel",
+            "valueName": "current",
+            "version": "0.9.0"
+        },
+        {
+            "datasource": {
+                "type": "golioth-websocket-datasource",
+                "uid": "${DS_FC_TELEM}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "drawStyle": "line",
+                        "fillOpacity": 0,
+                        "gradientMode": "none",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        },
+                        "lineInterpolation": "linear",
+                        "lineWidth": 1,
+                        "pointSize": 5,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "showPoints": "auto",
+                        "spanNulls": false,
+                        "stacking": {
+                            "group": "A",
+                            "mode": "none"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 15
+            },
+            "id": 4,
+            "options": {
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "golioth-websocket-datasource",
+                        "uid": "${DS_FC_TELEM}"
+                    },
+                    "fields": [
+                        {
+                            "jsonPath": "$.data.system_time",
+                            "language": "jsonpath",
+                            "name": "",
+                            "type": "time"
+                        },
+                        {
+                            "jsonPath": "$.data.rssi",
+                            "language": "jsonpath",
+                            "name": ""
+                        }
+                    ],
+                    "path": "/fc_telemetry",
+                    "refId": "A",
+                    "withStreaming": true
+                }
+            ],
+            "title": "Panel Title",
+            "type": "timeseries"
+        }
+    ],
+    "refresh": false,
+    "schemaVersion": 37,
+    "style": "dark",
+    "tags": [],
+    "templating": {
+        "list": []
+    },
+    "time": {
+        "from": "now-10s",
+        "to": "now"
+    },
+    "timepicker": {},
+    "timezone": "",
+    "title": "P&ID test",
+    "uid": "OnXlzaJVk",
+    "version": 6,
+    "weekStart": ""
+}

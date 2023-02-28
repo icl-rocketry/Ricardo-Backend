@@ -1,0 +1,30 @@
+[
+    {
+        "name": "rssi",
+        "data_source": "rssi",
+        "thresholds": {
+            "ascending": true,
+            "values": [
+                {
+                    "value": -105,
+                    "colour": "rgba(50, 172, 45, 0.97)"
+                },
+                {
+                    "value": -100,
+                    "colour": "rgba(237, 129, 40, 0.89)"
+                },
+                {
+                    "value": "base",
+                    "colour": "rgba(245, 54, 54, 0.9)"
+                }
+            ]
+        },
+        "events": [
+            {
+                "style": "blink",
+                "value":  500,
+                "eventOn": 0 
+            }
+        ]
+    }
+]
