@@ -177,7 +177,7 @@ if __name__ == "__main__":
     for panel in dashboard_template["panels"]:
         if "flowchartsData" in panel:
             panel["flowchartsData"]["flowcharts"][0]["xml"] = raw
-            panel["rulesData"]["rulesData"] = rules_data
+            panel["rulesData"]["rulesData"] = list(rules_data.values())
             break
 
     with open("out.json", "w") as file:
