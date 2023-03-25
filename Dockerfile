@@ -13,17 +13,20 @@ RUN mkdir /ricardo-backend
 # Move to backend directory
 WORKDIR /ricardo-backend
 
+# Copy Python requirements file to allow for caching of the pip3 install command
+COPY ./Install/python_requirements.txt ./Install/python_requirements.txt
+
+# Install Python requirements
+RUN pip3 install -r ./Install/python_requirements.txt
+
 # Copy backend files
 COPY . .
-
-# Make the backend script executable
-RUN chmod +x ./RicardoBackend.sh
 
 # Initialise and update submodules
 RUN git submodule init && git submodule update
 
-# Install Python requirements
-RUN pip3 install -r ./Install/python_requirements.txt
+# Make the backend script executable
+RUN chmod +x ./RicardoBackend.sh
 
 # Set default values for environment variables
 # TODO: set default device
