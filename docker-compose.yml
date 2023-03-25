@@ -1,0 +1,38 @@
+version: "3"
+
+services:
+
+  ricardo-backend:
+    image: ricardo-backend
+    container_name: ricardo-backend
+    environment:
+      - REDIS_HOST=redis
+    ports:
+      - 1337:1337
+    networks:
+      - backend
+    depends_on:
+      - redis
+    restart: always
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    networks:
+      - backend
+    restart: always
+
+  grafana:
+    image: grafana/grafana-oss
+    container_name: grafana
+    ports:
+      - 3000:3000
+    volumes:
+      - ./Config/grafana.db:/var/lib/grafana/grafana.db
+    networks:
+      - backend
+    restart: always
+
+networks:
+  backend:
+    external: false
