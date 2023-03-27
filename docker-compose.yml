@@ -25,6 +25,8 @@ services:
   grafana:
     image: grafana/grafana-oss
     container_name: grafana
+    environment:
+      - GF_INSTALL_PLUGINS=golioth-websocket-datasource
     ports:
       - 3000:3000
     volumes:
