@@ -5,11 +5,10 @@ import sys
 import redis
 import time
 
-from Interfaces import commandlineinterface
-from Interfaces import flaskinterface
-from Interfaces import datarequesttaskhandler
+from ricardobackend.flaskinterface import flaskinterface
+from ricardobackend.flaskinterface import datarequesttaskhandler
 
-from RicardoHandler import serialmanager
+from ricardobackend.serialmanager import serialmanager
 
 
 
@@ -77,11 +76,9 @@ if __name__ == '__main__':
                                                                                             argsin['redis_port'],))
     proclist['flaskinterface'].start()
 
-    
-    c = commandlineinterface.CommandLineInterface(redishost=argsin['redis_host'],
-                                                    redisport=argsin['redis_port'],
-                                                    )
-    c.cmdloop()
+    while(True):
+        pass
+
     exitBackend(proclist)
 
 

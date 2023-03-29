@@ -4,11 +4,11 @@ eventlet
 Flask
 Flask_SocketIO
 python-socketio
-matplotlib
-numpy
+# matplotlib
+# numpy
 pandas
-pygame
-PyOpenGL
+# pygame
+# PyOpenGL
 pyserial
 redis
 requests

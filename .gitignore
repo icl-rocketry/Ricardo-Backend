@@ -1,3 +1,5 @@
 venv
 dump.rdb
 Logs/*
+
+__pycache__
