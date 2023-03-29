@@ -14,10 +14,10 @@ RUN mkdir /ricardo-backend
 WORKDIR /ricardo-backend
 
 # Copy Python requirements file to allow for caching of the pip3 install command
-COPY ./Install/python_requirements.txt ./Install/python_requirements.txt
+COPY ./requirements.txt ./requirements.txt
 
 # Install Python requirements
-RUN pip3 install -r ./Install/python_requirements.txt
+RUN pip3 install -r ./requirements.txt
 
 # Copy backend files
 COPY . .

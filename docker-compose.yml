@@ -7,8 +7,11 @@ services:
     container_name: ricardo-backend
     environment:
       - REDIS_HOST=redis
+      - DEVICE=/dev/ricardo_device
     ports:
       - 1337:1337
+    devices:
+      - /dev/ttyUSB0:/dev/ricardo_device
     networks:
       - backend
     depends_on:
@@ -30,7 +33,7 @@ services:
     ports:
       - 3000:3000
     volumes:
-      - ./Config/grafana.db:/var/lib/grafana/grafana.db
+      - /home/pi/temp/grafana.db:/var/lib/grafana/grafana.db
     networks:
       - backend
     restart: always
