@@ -2,7 +2,7 @@
 
 # Execute backend, using parameters supplied via environment variables
 # TODO: add verbose and monitor flags
-python3 RicardoBackend.py \
+python3 main.py \
         --device $DEVICE \
         --baud $BAUD \
         --flask-host $FLASK_HOST \

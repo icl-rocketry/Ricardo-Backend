@@ -253,9 +253,21 @@ def cleanup(sig=None,frame=None): #ensure the telemetry broadcast thread has bee
 
 # DUTY FUNCTION
 def startFlaskInterface(flaskhost="0.0.0.0", flaskport=5000, 
-                        redishost='localhost', redisport=6379, real_data=True):
-    # original signal handler
-    if (real_data):
+                        redishost='localhost', redisport=6379, fake_data=False):
+   
+    if (fake_data):
+        # fake signal handler for ui testing only!!!
+        fake_signal_filename = 'telemetry_log.txt'
+        print("Reading fake signal from " + fake_signal_filename)
+        print("Starting server on port " + str(flaskport) + "...")
+
+        socketio.start_background_task(__DummySignalBroadcastTask__)
+        socketio.run(app, host=flaskhost, port=flaskport, debug=True, use_reloader=False)
+        cleanup()
+
+    
+    else:
+
         global r
         print("Server starting on port " + str(flaskport) + " ...")
 
@@ -265,17 +277,6 @@ def startFlaskInterface(flaskhost="0.0.0.0", flaskport=5000,
         socketio.start_background_task(__SocketIOResponseTask__,redishost,redisport)
         socketio.start_background_task(__SocketIOMessageQueueTask__,redishost,redisport)
         socketio.run(app, host=flaskhost, port=flaskport, debug=False, use_reloader=False)
-        cleanup()
-
-    # fake signal handler for ui testing only!!!
-    else:
-        # server logs
-        fake_signal_filename = 'telemetry_log.txt'
-        print("Reading fake signal from " + fake_signal_filename)
-        print("Starting server on port " + str(flaskport) + "...")
-
-        socketio.start_background_task(__DummySignalBroadcastTask__)
-        socketio.run(app, host=flaskhost, port=flaskport, debug=True, use_reloader=False)
         cleanup()
 
         
