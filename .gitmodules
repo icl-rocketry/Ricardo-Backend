@@ -1,12 +1,3 @@
-[submodule "pylibrnp"]
-	path = pylibrnp
-	url = https://github.com/icl-rocketry/pylibrnp
-[submodule "apps/magCalibration/pylibrnp"]
-	path = apps/magCalibration/pylibrnp
-	url = https://github.com/icl-rocketry/pylibrnp
-[submodule "apps/udpAdapter/pylibrnp"]
-	path = apps/udpAdapter/pylibrnp
-	url = https://github.com/icl-rocketry/pylibrnp
-[submodule "apps/pylibrnp"]
-	path = apps/pylibrnp
-	url = https://github.com/icl-rocketry/pylibrnp
+[submodule "external/pylibrnp"]
+	path = external/pylibrnp
+	url = git@github.com:icl-rocketry/pylibrnp.git
