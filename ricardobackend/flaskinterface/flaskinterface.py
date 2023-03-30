@@ -11,6 +11,7 @@ import queue as q
 from .telemetry_webui import telemetry_webui_bp
 from .command_webui import command_webui_bp
 from .datarequesttaskhandler import DataRequestTaskHandler
+from .emitter import EmitterClass
 
 
 # if __name__ == "__main__":
@@ -255,10 +256,9 @@ def __SocketIOMessageHandler__(message:dict):
 
 # dummy signal
 def __DummySignalBroadcastTask__():
-    from emitter import emitter
     global dummy_signal_running
     dummy_signal_running = True
-    e = emitter.EmitterClass('telemetry-log')
+    e = EmitterClass(socketio,'telemetry-log')
     while dummy_signal_running:
         e.emit() #call emit
     print('DummySignalBroadCastTask Killed')

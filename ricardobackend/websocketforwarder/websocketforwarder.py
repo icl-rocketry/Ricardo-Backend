@@ -76,6 +76,6 @@ if __name__ == "__main__":
     ap.add_argument("--ws_port", required=False, help="Websocket Port", type=int,default=8080)
 
     args = vars(ap.parse_args())
-
+    
     websocketforwarder = WebsocketForwarder(sio_host=args["sio_host"],sio_port=args["sio_port"],ws_host=args["ws_host"],ws_port=args["ws_port"])
     websocketforwarder.start()

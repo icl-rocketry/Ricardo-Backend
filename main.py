@@ -18,7 +18,7 @@ from ricardobackend.websocketforwarder import websocketforwarder
 
 # Argument Parsing
 ap = argparse.ArgumentParser()
-ap.add_argument("-d", "--device", required=True, help="Ricardo Serial Port", type=str)
+ap.add_argument("-d", "--device", required=False, help="Ricardo Serial Port", type=str)
 ap.add_argument("-b", "--baud", required=False, help="Serial Port Baud Rate", type=int,default=115200)
 ap.add_argument("--flask-host", required=False, help="flask host", type=str,default="0.0.0.0")
 ap.add_argument("--flask-port", required=False, help="flask Port", type=int,default = 1337)
@@ -56,8 +56,7 @@ def startSerialManager(args,sendQueue,receiveQueue_dict):
     serman.run()
 
 def startWebSocketForwarder(args):
-
-    wsforwarder = websocketforwarder.WebsocketForwarder(sio_host = "localhost",
+    wsforwarder = websocketforwarder.WebsocketForwarder(sio_host = "127.0.0.1",
                                                         sio_port = args['flask_port'],
                                                         ws_host = args['ws_host'],
                                                         ws_port = args['ws_port'])
@@ -78,12 +77,15 @@ if __name__ == '__main__':
     receiveQueue_dict = {"flaskinterface":multiprocessing.Queue()}
 
     if not (argsin['fake_data']):
+        if argsin.get('device',None) is None:
+            raise Exception("No device passed")
         proclist['serialmanager'] = multiprocessing.Process(target=startSerialManager,args=(argsin,sendQueue,receiveQueue_dict,))
         proclist['serialmanager'].start()
 
     #start flask interface process
     proclist['flaskinterface'] = multiprocessing.Process(target=startFlaskInterface,args=(argsin,sendQueue,receiveQueue_dict['flaskinterface']))
     proclist['flaskinterface'].start()
+    time.sleep(1)
 
     proclist['websocketforwarder'] = multiprocessing.Process(target=startWebSocketForwarder,args=(argsin,))
     proclist['websocketforwarder'].start()
