@@ -9,14 +9,15 @@ from cobs import cobs
 import signal
 import sys
 import socket
-
+import multiprocessing as mp
+from queue import Full, Empty
 
 
 class SerialManager():
 	SimpleSend:int = 0
 	WaitForIncomming:int = 1
 
-	def __init__(self, device, baud=115200, waittime = .3,redishost = 'localhost',redisport = 6379,verbose=False,UDPMonitor=False,UDPIp='127.0.0.1',UDPPort=7000):
+	def __init__(self, device, baud=115200, waittime = .3,sendQ = None,receiveQ_dict = None,verbose=False,UDPMonitor=False,UDPIp='127.0.0.1',UDPPort=7000):
 		signal.signal(signal.SIGINT,self.exitHandler)
 		signal.signal(signal.SIGTERM,self.exitHandler)
 		self.device = device
@@ -39,18 +40,24 @@ class SerialManager():
 		self.messageQueueSize = 5000
 		self.receiveBuffer = []
 
-		self.packetRecord = {} 
+		self.packetRecord = {} # dict -> {uid:identifier:dict}
 		self.counter = 0
 
 		self.receivedQueueTimeout = 10*60 #default 10 minute timeout
 
-		self.redishost = redishost
-		self.redisport= redisport
+		# self.redishost = redishost
+		# self.redisport= redisport
+
+		if sendQ is None or receiveQ_dict is None:
+			raise Exception('[Serial-Manager]: Error, no sendqueue or receivequeue passed, exiting')
+
+		self.sendQ:mp.Queue = sendQ
+		self.receiveQ_dict:dict = receiveQ_dict #{"prefix1":mp.Queue,"prefix2":mp.Queue}...
 
 		#connect to redis 
-		self.rd = redis.Redis(host = self.redishost,port = self.redisport)
+		# self.rd = redis.Redis(host = self.redishost,port = self.redisport)
 		#clear SendQueue
-		self.rd.delete("SendQueue")
+		# self.rd.delete("SendQueue")
 
 		self.UDPMonitor = UDPMonitor
 		#setup udp monitor
@@ -150,9 +157,28 @@ class SerialManager():
 	
 		if uid in self.packetRecord:
 			#get client id from packetrecord and remove corresponding entry
-			client_id = self.packetRecord.pop(uid)[0]
-			#add entry to recieved packets dictionary with client id as key
-			key = "ReceiveQueue:"+str(client_id)	
+			identifier = self.packetRecord.pop(uid)[0]
+			#retreive the appropriate queue
+			try:
+				queue:mp.Queue = self.receiveQ_dict[identifier['prefix']]
+			except KeyError:
+				print('[Serial-Manager]: Invalid key: ' + identifier['prefix'] + 'dumping packet!')
+				return
+
+			try:
+				sendData = {'identifier':identifier,'type':'response','data':data}
+				queue.put_nowait(sendData)
+			except Full:
+				print('[Serial-Manager]: receive queue full, dumping packet!')
+				return
+
+			# #add received packets to redis db
+			# self.rd.lpush(key,data)
+			# #set timeout for list so list will be deleted if never acsessed
+			# #ensure on any redis interfaces, that the expiry is reset to esnure we dont loose packets
+			# self.rd.expire(key , self.receivedQueueTimeout) 
+
+	
 		else:
 			#handle packets addressed to the local packet handler on the backend
 			if (uid == 0) and (header.destination_service == 0):
@@ -160,27 +186,23 @@ class SerialManager():
 				
 				return
 
-			#unkown packet received
+			#unkown packet received -> dump packet ; might be worth spewing these into a file
 			print("[ERROR-BACKEND] unkown packet recieved")
 			print(header)
-			key = "ReceiveQueue:__UNKOWN_PACKET__"
+			return
 
 			
-		#add received packets to redis db
-		self.rd.lpush(key,data)
-		#set timeout for list so list will be deleted if never acsessed
-		#ensure on any redis interfaces, that the expiry is reset to esnure we dont loose packets
-		self.rd.expire(key , self.receivedQueueTimeout) 
+		
 
 
-	def __sendPacket__(self,data:bytes,clientid):
+	def __sendPacket__(self,data:bytes,identifier:dict):
 		header = RnpHeader.from_bytes(data)#decode header
 		uid = self.__generateUID__() #get uuid
 		header.uid = uid #get uuid
 		serialized_header = header.serialize() #re-serialize header
 		modifieddata = bytearray(data)
 		modifieddata[:len(serialized_header)] = serialized_header
-		self.packetRecord[uid] = [clientid,time.time()] #update packetrecord dictionary
+		self.packetRecord[uid] = [identifier,time.time()] #update packetrecord dictionary
 		#self.sendBuffer.append(data)#add packet to send buffer
 		self.__sendToUDP__(modifieddata)  #send data to udp monitor
 		# cobs encode
@@ -206,13 +228,21 @@ class SerialManager():
 			
 	
 	def __processSendQueue__(self):
-		if self.rd.llen("SendQueue") > 0:
-			item = json.loads(self.rd.rpop("SendQueue"))
+		try:
 			#item is a json object with structure 
 			#{data:bytes as hex string,
 			# clientid:""}
-			self.__sendPacket__(bytes.fromhex(item["data"]),item["clientid"])
+			item = self.sendQ.get_nowait()
+			self.__sendPacket__(bytes.fromhex(item['data']),item['identifier'])
 			self.prevSendTime = time.time_ns()
+		except Empty:
+			return
+		
+		# if self.rd.llen("SendQueue") > 0:
+		# 	item = json.loads(self.rd.rpop("SendQueue"))
+			
+		# 	self.__sendPacket__(bytes.fromhex(item["data"]),item["clientid"])
+		# 	self.prevSendTime = time.time_ns()
 				
 		
 
@@ -247,10 +277,19 @@ class SerialManager():
 				print("Message: " + message)
 			json_message = {"header" : vars(header),
 							"message": message}
+			#broadcast message to all receive queues
+			for queue in self.receiveQ_dict.values():
+				try:
+					json_message['type'] = "logmessage"
+					queue.put_nowait(json_message)
+				except Full:
+					print('[Serial-Manager]: receive Queue full, skipping message')
+
 			#check length of message queue before pushing 
-			if (self.rd.llen("MessageQueue") > self.messageQueueSize):
-				self.rd.delete("MessageQueue")
-			self.rd.lpush("MessageQueue",json.dumps(json_message))
-			self.rd.expire("MessageQueue" , self.receivedQueueTimeout) 
+			# if (self.rd.llen("MessageQueue") > self.messageQueueSize):
+			# 	self.rd.delete("MessageQueue")
+			# self.rd.lpush("MessageQueue",json.dumps(json_message))
+			# self.rd.expire("MessageQueue" , self.receivedQueueTimeout) 
+
 			return
 		

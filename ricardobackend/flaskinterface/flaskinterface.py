@@ -1,8 +1,11 @@
 # PACKAGES
 # flask packages
-from queue import Empty
+from queue import Empty, Full
 from flask import Flask, jsonify, request, Response, render_template, send_from_directory
 from flask_socketio import SocketIO, emit, send # added emit from flask_socketio
+import multiprocessing as mp
+import queue as q
+
 
 
 from .telemetry_webui import telemetry_webui_bp
@@ -52,15 +55,22 @@ app.config['DEBUG'] = False
 # socketio app
 socketio = SocketIO(app,cors_allowed_origins="*",async_mode='eventlet',logger=True)
 socketio_clients = []
+#flask rest api variables
+rest_response_queue_maxsize = 10
+rest_response_list = None #this will be a dict mapping to queues {"clientid1":Queue,"clientid2":Queue}
 
 # SYSTEM VARIABLES
 # thread-safe variables
 socketio_response_task_running:bool = False
-socketio_message_queue_task_running:bool = False
 dummy_signal_running:bool = False
+sendQ = None
 
-# redis variables
-r : redis.Redis = None
+flaskinterface_response_task_running:bool = False
+
+#data task request handler variables
+# dtrh_receiveQ_maxsize = 1000
+dtrh_receiveQ:mp.Queue = mp.Queue()
+
 # misc
 prev_time = 0
 updateTimePeriod = 0.01 #in seconds
@@ -82,13 +92,23 @@ updateTimePeriod = 0.01 #in seconds
 
 @app.route('/packet', methods=['POST'])
 def send_packet():
+    global sendQ
     packet_data = request.json
     print('POST DATA')
     print(packet_data)
     if packet_data == None:
         return 'Bad Request',400
     if all (keys in packet_data for keys in ("data","clientid")):
-        r.lpush("SendQueue",json.dumps(packet_data))
+
+        identifier = {"prefix":"flaskinterface","process_id":"REST","clientid":packet_data['clientid']}
+        sendData = {'data':packet_data.get('data'),
+                    'identifier':identifier}
+        try:
+            sendQ.put_nowait(sendData)
+        except Full:
+            print('[Flask-Inteface] Send Queue full, discarding packet!')
+
+        # r.lpush("SendQueue",json.dumps(packet_data))
         return 'OK',200
     else:
         return 'Bad Request',400
@@ -101,34 +121,34 @@ def get_response():
     clientid = args.get("clientid")
     
     if clientid is not None:
-        key = "ReceiveQueue:" + str(clientid)
-        if r.llen(key) > 0 :
-            received_response :bytes = r.rpop(key)
+        if clientid in rest_response_list.keys():
+            received_response = rest_response_list[clientid].get('data').hex()
             return received_response,200
         else:
             return "NODATA",200
     else:
         return 'Bad Request \nNo Client ID supplied',400
 
-@app.route('/telemetry', methods=['GET'])
-def get_telemetry():
-    #get telemetry data from redis db
-    #the telemetry key will be a json object
-    #prcess the request args to retrieve task_id
-    args = request.args
-    print(args)
-    args.to_dict()
-    task_id:str = "telemetry:" + args.get("task_id")
-    if r is None:
-        return '''Redis client not setup in flaskinterface.py, 
-        likely you are running the flaskinterface.py directly... 
-        If you aren't, check that redis is running and is correctly 
-        being setup when flaskinterface is being called''',503
-    telemetry_data = r.get(task_id)
-    if telemetry_data is not None:
-        return json.loads(telemetry_data),200
-    else:
-        return "NODATA",200
+#method depreciated
+# @app.route('/telemetry', methods=['GET'])
+# def get_telemetry():
+#     #get telemetry data from redis db
+#     #the telemetry key will be a json object
+#     #prcess the request args to retrieve task_id
+#     args = request.args
+#     print(args)
+#     args.to_dict()
+#     task_id:str = "telemetry:" + args.get("task_id")
+#     if r is None:
+#         return '''Redis client not setup in flaskinterface.py, 
+#         likely you are running the flaskinterface.py directly... 
+#         If you aren't, check that redis is running and is correctly 
+#         being setup when flaskinterface is being called''',503
+#     telemetry_data = r.get(task_id)
+#     if telemetry_data is not None:
+#         return json.loads(telemetry_data),200
+#     else:
+#         return "NODATA",200
 
 @app.route("/graph",methods=['get']) # -> depreciated, prefer using flask blueprints to serve
 def get_graph():
@@ -157,14 +177,19 @@ def connect_command():
     
 @socketio.on('send_data',namespace='/packet')
 def send_data_event(data):
+    global sendQ
     packetData = data
     if 'data' not in packetData.keys():
         emit('Error',{'Error':'No Data!'},namespace='/packet')
         return
-    
+    identifier = {"prefix":"flaskinterface","process_id":"SIO","sid":str(request.sid)}
     sendData = {'data':packetData.get('data'),
-                'clientid':'LOCAL:SOCKETIO:'+str(request.sid)}
-    r.lpush("SendQueue",json.dumps(sendData))
+                'identifier':identifier}
+    # r.lpush("SendQueue",json.dumps(sendData))
+    try:
+        sendQ.put_nowait(sendData)
+    except Full:
+        print('[Flask-Inteface] Send Queue full, discarding packet!')
     
 
 @socketio.on('disconnect',namespace='/packet')
@@ -175,56 +200,103 @@ def disconnect_command():
 
 
 # TASKS
-def startDataRequestHandler(redis_host,redis_port):
-    datarequesthandler = DataRequestTaskHandler(socketio,redishost=redis_host,redisport=redis_port)
+def startDataRequestHandler(sendQ:mp.Queue,dtrh_receiveQ:mp.Queue):
+    datarequesthandler = DataRequestTaskHandler(socketio,sendQ = sendQ,receiveQ = dtrh_receiveQ)
     datarequesthandler.mainloop()
 
 #socketio repsonse task
-def __SocketIOResponseTask__(redishost,redisport):
-    global socketio_response_task_running,socketio_clients
-    socketio_response_task_running = True
+# def __SocketIOResponseTask__(redishost,redisport):
+#     global socketio_response_task_running,socketio_clients
+#     socketio_response_task_running = True
 
-    redis_connection = redis.Redis(host=redishost,port=redisport)
+#     redis_connection = redis.Redis(host=redishost,port=redisport)
 
-    while socketio_response_task_running:
-        keylist = list(redis_connection.scan_iter('ReceiveQueue:LOCAL:SOCKETIO:*',1)) #find keys with the prefix 
-        if keylist: #check we got keys
-            key = keylist[0] #only process 1 key at a time
-            key_string:str = bytes(key).decode("UTF-8")
-            # sid = key_string.removeprefix('ReceiveQueue:LOCAL:SOCKETIO:') #only works with py3.9
-            sid = key_string[len('ReceiveQueue:LOCAL:SOCKETIO:'):]
+#     while socketio_response_task_running:
+#         keylist = list(redis_connection.scan_iter('ReceiveQueue:LOCAL:SOCKETIO:*',1)) #find keys with the prefix 
+#         if keylist: #check we got keys
+#             key = keylist[0] #only process 1 key at a time
+#             key_string:str = bytes(key).decode("UTF-8")
+#             # sid = key_string.removeprefix('ReceiveQueue:LOCAL:SOCKETIO:') #only works with py3.9
+#             sid = key_string[len('ReceiveQueue:LOCAL:SOCKETIO:'):]
 
-            print(key)
-            print(socketio_clients)
+#             print(key)
+#             print(socketio_clients)
 
-            if sid in socketio_clients:
-                redis_connection.persist(key) #remove key timeout
-                responseData:bytes = redis_connection.rpop(key)
-                response = {'Data':str(responseData.hex())}
-                print(response)
+#             if sid in socketio_clients:
+#                 redis_connection.persist(key) #remove key timeout
+#                 responseData:bytes = redis_connection.rpop(key)
+#                 response = {'Data':str(responseData.hex())}
+#                 print(response)
 
-                socketio.emit('Response',response,to=sid,namespace='/packet')
+#                 socketio.emit('Response',response,to=sid,namespace='/packet')
 
-            else:
-                redis_connection.delete(key)#delete the whole receive queue as client is no longer connected     
+#             else:
+#                 redis_connection.delete(key)#delete the whole receive queue as client is no longer connected     
         
-        eventlet.sleep(0.005)
+#         eventlet.sleep(0.005)
 
-    print("SocketIOResponseTask Killed")
+#     print("SocketIOResponseTask Killed")
+
+def __SocketIOResponseHandler__(item):
+    sid = (item.get('identifier',None)).get('sid',None)
+    if sid is None:
+        print('Identifier badly formed')
+        print(item)
+        return
+    
+    print(sid)
+    print(socketio_clients)
+
+    if sid in socketio_clients:
+        responseData = item.get('data')
+
+        response = {'Data':str(responseData.hex())}
+        print(response)
+
+        socketio.emit('Response',response,to=sid,namespace='/packet')
+
+def __RESTAPIResponseHandler__(item):
+    global rest_response_list
+    clientid = (item.get('identifier',None)).get('clientid',None)
+    if clientid is None:
+        print('Identifier badly formed')
+        print(item)
+        return
+   
+  
+    if clientid in rest_response_list.keys():
+        try:
+            rest_response_list[clientid].put_nowait(item)
+        except Full:
+            print('[Flask-Interface]: rest response queue full, removing first item and pushing to queue!')
+            rest_response_list[clientid].get()
+            rest_response_list[clientid].put_nowait(item)
+
+    else:
+        rest_response_list[clientid] = q.Queue(maxsize=rest_response_queue_maxsize)
+        rest_response_list[clientid].put_nowait(item)
+   
+    
+    
 
 #socket io message queue task
-def __SocketIOMessageQueueTask__(redishost,redisport):
-    global socketio_message_queue_task_running
-    socketio_message_queue_task_running = True
+# def __SocketIOMessageQueueTask__(redishost,redisport):
+#     global socketio_message_queue_task_running
+#     socketio_message_queue_task_running = True
 
-    redis_connection = redis.Redis(host=redishost,port=redisport)
+#     redis_connection = redis.Redis(host=redishost,port=redisport)
 
-    while socketio_message_queue_task_running:
-        eventlet.sleep(0.005)# sleep for update time 
-        data = redis_connection.rpop("MessageQueue")
-        if data is not None:
-           socketio.emit("new_message",json.dumps(json.loads(data)),namespace="/messages")
-    print("SocketIOMessageQueueTask Killed")
+#     while socketio_message_queue_task_running:
+#         eventlet.sleep(0.005)# sleep for update time 
+#         data = redis_connection.rpop("MessageQueue")
+#         if data is not None:
+#            socketio.emit("new_message",json.dumps(json.loads(data)),namespace="/messages")
+#     print("SocketIOMessageQueueTask Killed")
+
+
+def __SocketIOMessageHandler__(message:dict):
+    socketio.emit("new_message",message,namespace="/messages")
+
 
 # dummy signal
 def __DummySignalBroadcastTask__():
@@ -236,13 +308,69 @@ def __DummySignalBroadcastTask__():
         e.emit() #call emit
     print('DummySignalBroadCastTask Killed')
 
+def __FlaskInterfaceResponseHandler__(receiveQ:mp.Queue,dtrh_receiveQ:mp.Queue):
+    global flaskinterface_response_task_running
+    flaskinterface_response_task_running = True
+
+    while flaskinterface_response_task_running:
+        try:
+            item:dict = receiveQ.get(block=False)  #expect a dict
+            item_type = item['type'] #retrieve type of item
+            if item_type == 'response':
+                #response data will have a dict of the following form
+                #{"identifier":identifier:dict,"data":responsedata:bytes}
+             
+                try:
+                    identifier:dict = item['identifier'] 
+                except KeyError:
+                    print('[Flask-Interface]: identifier key not found in item')
+                    continue
+                #identifier will be a dict which structure depends on the prticular applicaiton 
+                #for the flask interface we expct somethign like this
+                #{"prefix":"flaskinterface","process_id":"datataskrequesthandler","..."}
+                #we want the process_id here to figure out how to distributed
+                #to the sub applkication tasks i.e data task request handler and rest apis etcc
+                try:
+                     process_identifier:str = identifier['process_id']
+                except KeyError:
+                    print('[Flask-Interface]: process_id key not found in item')
+                    continue
+               
+                # print(process_identifier)
+                if process_identifier == "DTRH":
+                    try:
+                        dtrh_receiveQ.put_nowait(item)
+                    except Full:
+                        print("[Flask-Interface] data task request handler queue full, discarding packet!")
+                elif process_identifier == "SIO":
+                    __SocketIOResponseHandler__(item)
+                elif process_identifier == "REST":
+                    __RESTAPIResponseHandler__(item)
+                else:
+                    #need to use an actual logging library not just print statements...
+                    print("[Flask-Interface] : task id not recognised")
+            
+                    
+                    #try continue with life
+                    # expect to catch badly formatted json
+            elif item_type == 'logmessage':
+                #Log message data wil have a dict of the following form
+                #{"header":header_vars:dict,"message":str}
+                item.pop('type') #remove type field from item
+                __SocketIOMessageHandler__(item)
+        except Empty:
+            pass
+        eventlet.sleep(0.001)
+
+
+    
 
 # thread cleanup
 def cleanup(sig=None,frame=None): #ensure the telemetry broadcast thread has been killed
-    global dummy_signal_running, socketio_response_task_running
+    global dummy_signal_running,flaskinterface_response_task_running
     
     dummy_signal_running = False
-    socketio_response_task_running = False
+    flaskinterface_response_task_running = False
 
     eventlet.sleep(0.2)#allow threads to terminate
 
@@ -252,9 +380,9 @@ def cleanup(sig=None,frame=None): #ensure the telemetry broadcast thread has bee
 
 
 # DUTY FUNCTION
-def startFlaskInterface(flaskhost="0.0.0.0", flaskport=5000, 
-                        redishost='localhost', redisport=6379, fake_data=False):
-   
+def startFlaskInterface(sendQueue:mp.Queue = None,receiveQueue:mp.Queue = None,flaskhost="0.0.0.0", flaskport=5000, 
+                         fake_data=False):
+    
     if (fake_data):
         # fake signal handler for ui testing only!!!
         fake_signal_filename = 'telemetry_log.txt'
@@ -265,20 +393,22 @@ def startFlaskInterface(flaskhost="0.0.0.0", flaskport=5000,
         socketio.run(app, host=flaskhost, port=flaskport, debug=True, use_reloader=False)
         cleanup()
 
-    
     else:
+        global sendQ
 
-        global r
-        print("Server starting on port " + str(flaskport) + " ...")
+        if sendQueue is None or receiveQueue is None:
+            print("No Send or Receive Queue Provided, Quiting!")
 
-        r = redis.Redis(redishost,redisport)
+        else:  
+            sendQ = sendQueue
+            print("Server starting on port " + str(flaskport) + " ...")
 
-        socketio.start_background_task(startDataRequestHandler,redishost,redisport)
-        socketio.start_background_task(__SocketIOResponseTask__,redishost,redisport)
-        socketio.start_background_task(__SocketIOMessageQueueTask__,redishost,redisport)
-        socketio.run(app, host=flaskhost, port=flaskport, debug=False, use_reloader=False)
+            socketio.start_background_task(startDataRequestHandler,sendQ,dtrh_receiveQ)
+            socketio.start_background_task(__FlaskInterfaceResponseHandler__,receiveQueue,dtrh_receiveQ)
+            socketio.run(app, host=flaskhost, port=flaskport, debug=False, use_reloader=False)
+
         cleanup()
 
         
 if __name__ == "__main__":
-    startFlaskInterface(flaskport=1337, real_data=False)
+    startFlaskInterface(flaskport=1337, fake_data=True)

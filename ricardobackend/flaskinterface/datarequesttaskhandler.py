@@ -11,6 +11,8 @@ import csv
 import sys
 import signal
 from datetime import datetime
+import multiprocessing as mp
+from queue import Full,Empty
 
 
 MS_TO_NS = 1e6
@@ -96,9 +98,16 @@ class DataRequestTask():
 class DataRequestTaskHandler():
 
 
-    def __init__(self,sio_instance,redishost,redisport,socketiohost=None,socketioport=None):
-        self.r = redis.Redis(redishost,redisport)
-        self.client_id_prefix = "LOCAL:DATAREQUESTHANDLER:"
+    def __init__(self,sio_instance,sendQ=None,receiveQ = None,socketiohost=None,socketioport=None,prefix:str = "flaskinterface"):
+        # self.r = redis.Redis(redishost,redisport)
+        if sendQ is None or receiveQ is None:
+            raise Exception('No send queue or receive queue provided')
+
+        self.sendQ:mp.Queue = sendQ
+        self.receiveQ:mp.Queue = receiveQ
+
+        self.identifier = {"prefix":prefix,"process_id":'DTRH'}
+
         self.config_filename = 'Config/DataRequestTaskConfig.json'
         
         self.task_container = {} #{task_name:task_object}
@@ -196,35 +205,43 @@ class DataRequestTaskHandler():
         decodedData = task.decodeData(data)
         #publish to socketio
         self.sio.emit(task_id,json.dumps(decodedData),namespace='/telemetry')
-        #publish to redis -> note the prefix "telemetry:" which is being used to namepsace the key 
-        #to replicate how the data is served in socketio 
-        self.r.set("telemetry:"+task_id,json.dumps(decodedData))
+        #publish to redis depreceated
+        # #publish to redis -> note the prefix "telemetry:" which is being used to namepsace the key 
+        # #to replicate how the data is served in socketio 
+        # self.r.set("telemetry:"+task_id,json.dumps(decodedData))
 
 
         
     def __sendPacketFunction__(self,packet,task_id):
+        #construct identifier
+        identifier = self.identifier
+        identifier['task_id'] = task_id
         send_data = {
             "data":packet.serialize().hex(),
-            "clientid":self.client_id_prefix + task_id
+            "identifier":identifier
         }
-        self.r.lpush("SendQueue",json.dumps(send_data))
+        # self.r.lpush("SendQueue",json.dumps(send_data))
+        try:
+            self.sendQ.put_nowait(send_data)
+        except Full:
+            print("[Data Task Request Handler] Send Queue Full!")
     
     def __checkReceiveQueue__(self):
-        keylist = list(self.r.scan_iter('ReceiveQueue:'+self.client_id_prefix+"*",1)) #find keys with the prefix 
-        if keylist: #check we got keys
-           
-            key = keylist[0] #only process 1 key at a time
-            key_string:str = bytes(key).decode("UTF-8")
-            task_id = key_string[len('ReceiveQueue:'+self.client_id_prefix):]
-            if task_id in self.task_container.keys():
-                
-                self.r.persist(key) #remove key timeout
-                responseData:bytes = self.r.rpop(key)
-                self.publish_new_data(responseData,task_id)
 
+        try:
+            item = self.receiveQ.get_nowait()
+            identifier = item['identifier']
+            task_id = identifier['task_id']
+            if task_id in self.task_container.keys():
+                responseData:bytes = item['data']
+                self.publish_new_data(responseData,task_id)
             else:
-                self.r.delete(key)#delete the whole receive queue as task is no longer active   
-        
+                #task id no longer active so dump received data
+                pass
+
+        except Empty:
+            pass
+
 
     def __exitHandler__(self,sig=None,frame=None):
         self.run=False

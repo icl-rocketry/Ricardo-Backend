@@ -10,6 +10,10 @@ from ricardobackend.serialmanager import serialmanager
 from ricardobackend.websocketforwarder import websocketforwarder
 
 
+# 
+# SendQ -> {type,clientid,data}
+# ReceiveQ:CLIENTID -> {type,clientid?,data}
+# 
 
 
 # Argument Parsing
@@ -39,39 +43,46 @@ def exitBackend(proclist):
 
     sys.exit(0)
 
-def startSerialManager(args):
+def startSerialManager(args,sendQueue,receiveQueue_dict):
 
     serman = serialmanager.SerialManager(device = args["device"],
                                      baud = args["baud"],
                                      UDPMonitor=args['monitor'],
                                      UDPIp=args['monitor_ip'],
                                      UDPPort=args["monitor_port"],
-                                     verbose=args['verbose'])
+                                     verbose=args['verbose'],
+                                     sendQ=sendQueue,
+                                     receiveQ_dict=receiveQueue_dict)
     serman.run()
 
 def startWebSocketForwarder(args):
 
-    wsforwarder = websocketforwarder.WebsocketForwarder(sio_host = "127.0.0.1",
+    wsforwarder = websocketforwarder.WebsocketForwarder(sio_host = "localhost",
                                                         sio_port = args['flask_port'],
                                                         ws_host = args['ws_host'],
-                                                        ws_port = args['wd_port'])
+                                                        ws_port = args['ws_port'])
     wsforwarder.start()
 
-def startFlaskInterface(args):
+def startFlaskInterface(args,sendQueue,receiveQueue):
     flaskinterface.startFlaskInterface(flaskhost=args['flask_host'],
                                        flaskport=args['flask_port'],
-                                       fake_data=args['fake_data'])
+                                       fake_data=args['fake_data'],
+                                       sendQueue=sendQueue,
+                                       receiveQueue=receiveQueue)
 
 
 if __name__ == '__main__':
     proclist = {}
 
+    sendQueue = multiprocessing.Queue()
+    receiveQueue_dict = {"flaskinterface":multiprocessing.Queue()}
+
     if not (argsin['fake_data']):
-        proclist['serialmanager'] = multiprocessing.Process(target=startSerialManager,args=(argsin,))
+        proclist['serialmanager'] = multiprocessing.Process(target=startSerialManager,args=(argsin,sendQueue,receiveQueue_dict,))
         proclist['serialmanager'].start()
 
     #start flask interface process
-    proclist['flaskinterface'] = multiprocessing.Process(target=startFlaskInterface,args=(argsin,))
+    proclist['flaskinterface'] = multiprocessing.Process(target=startFlaskInterface,args=(argsin,sendQueue,receiveQueue_dict['flaskinterface']))
     proclist['flaskinterface'].start()
 
     proclist['websocketforwarder'] = multiprocessing.Process(target=startWebSocketForwarder,args=(argsin,))
