@@ -205,37 +205,6 @@ def startDataRequestHandler(sendQ:mp.Queue,dtrh_receiveQ:mp.Queue):
     datarequesthandler.mainloop()
 
 #socketio repsonse task
-# def __SocketIOResponseTask__(redishost,redisport):
-#     global socketio_response_task_running,socketio_clients
-#     socketio_response_task_running = True
-
-#     redis_connection = redis.Redis(host=redishost,port=redisport)
-
-#     while socketio_response_task_running:
-#         keylist = list(redis_connection.scan_iter('ReceiveQueue:LOCAL:SOCKETIO:*',1)) #find keys with the prefix 
-#         if keylist: #check we got keys
-#             key = keylist[0] #only process 1 key at a time
-#             key_string:str = bytes(key).decode("UTF-8")
-#             # sid = key_string.removeprefix('ReceiveQueue:LOCAL:SOCKETIO:') #only works with py3.9
-#             sid = key_string[len('ReceiveQueue:LOCAL:SOCKETIO:'):]
-
-#             print(key)
-#             print(socketio_clients)
-
-#             if sid in socketio_clients:
-#                 redis_connection.persist(key) #remove key timeout
-#                 responseData:bytes = redis_connection.rpop(key)
-#                 response = {'Data':str(responseData.hex())}
-#                 print(response)
-
-#                 socketio.emit('Response',response,to=sid,namespace='/packet')
-
-#             else:
-#                 redis_connection.delete(key)#delete the whole receive queue as client is no longer connected     
-        
-#         eventlet.sleep(0.005)
-
-#     print("SocketIOResponseTask Killed")
 
 def __SocketIOResponseHandler__(item):
     sid = (item.get('identifier',None)).get('sid',None)
@@ -250,10 +219,10 @@ def __SocketIOResponseHandler__(item):
     if sid in socketio_clients:
         responseData = item.get('data')
 
-        response = {'Data':str(responseData.hex())}
+        response = {'data':str(responseData.hex())}
         print(response)
 
-        socketio.emit('Response',response,to=sid,namespace='/packet')
+        socketio.emit('response',response,to=sid,namespace='/packet')
 
 def __RESTAPIResponseHandler__(item):
     global rest_response_list
@@ -280,20 +249,6 @@ def __RESTAPIResponseHandler__(item):
     
 
 #socket io message queue task
-# def __SocketIOMessageQueueTask__(redishost,redisport):
-#     global socketio_message_queue_task_running
-#     socketio_message_queue_task_running = True
-
-#     redis_connection = redis.Redis(host=redishost,port=redisport)
-
-#     while socketio_message_queue_task_running:
-#         eventlet.sleep(0.005)# sleep for update time 
-#         data = redis_connection.rpop("MessageQueue")
-#         if data is not None:
-#            socketio.emit("new_message",json.dumps(json.loads(data)),namespace="/messages")
-#     print("SocketIOMessageQueueTask Killed")
-
-
 def __SocketIOMessageHandler__(message:dict):
     socketio.emit("new_message",message,namespace="/messages")
 

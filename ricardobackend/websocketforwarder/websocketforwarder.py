@@ -52,9 +52,10 @@ class WebsocketForwarder():
         print(telemetry_key + " connected")
 
         while True:
+            #we need to update this to make sure the data being forwarded is realtime...
             data = await data_queue.get()
             await websocket.send(f"{{\"timestamp\": {time.time_ns()*NS_TO_MS}, \"data\": {data}}}") #Todo make this not horrible
-            await asyncio.sleep(0.05)
+            await asyncio.sleep(0.005)
 
     async def main(self):
         await self.sio.connect(self.sio_url, namespaces=["/telemetry"]) 
