@@ -4,6 +4,8 @@ import threading
 import redis
 # import socketio
 import json
+import simplejson #needed to handle NaNs... smh
+
 import time
 from pylibrnp import defaultpackets
 from pylibrnp import dynamic_rnp_packet_generator as drpg
@@ -13,6 +15,8 @@ import signal
 from datetime import datetime
 import multiprocessing as mp
 from queue import Full,Empty
+
+
 
 
 MS_TO_NS = 1e6
@@ -204,7 +208,8 @@ class DataRequestTaskHandler():
         task = self.task_container[task_id]
         decodedData = task.decodeData(data)
         #publish to socketio
-        self.sio.emit(task_id,json.dumps(decodedData),namespace='/telemetry')
+        #use simplejson to dump json as string so that NaNs are converted to null
+        self.sio.emit(task_id,simplejson.dumps(decodedData,ignore_nan=True),namespace='/telemetry')
         #publish to redis depreceated
         # #publish to redis -> note the prefix "telemetry:" which is being used to namepsace the key 
         # #to replicate how the data is served in socketio 
