@@ -35,9 +35,15 @@ class WebsocketForwarder():
         #each time we get a new event which has the prefix telemetry we spawn a new queue in a 
         #threadsafe list 
         if (event not in self.data_queue_dict.keys()):
-            self.data_queue_dict[event] = asyncio.Queue()
+            self.data_queue_dict[event] = asyncio.Queue(maxsize=2)
     
-        await self.data_queue_dict[event].put(data)
+        # await self.data_queue_dict[event].put(data)
+
+        #if queue is full dont wait to put more data on just ignore
+        try:
+            self.data_queue_dict[event].put_nowait(data)
+        except asyncio.QueueFull:
+            return
     
     async def send_to_websocket(self,websocket, path):
         print(path)
@@ -54,12 +60,13 @@ class WebsocketForwarder():
         while True:
             #we need to update this to make sure the data being forwarded is realtime...
             data = await data_queue.get()
-            await websocket.send(f"{{\"timestamp\": {time.time_ns()*NS_TO_MS}, \"data\": {data}}}") #Todo make this not horrible
-            await asyncio.sleep(0.005)
+            await websocket.send(f"{{\"timestamp\": {time.time_ns()*NS_TO_MS}, \"data\": {data}}}") #Todo make this not horrible -> maybe timestap should be set on the dtrh rather than here
+            await asyncio.sleep(0.1)
 
     async def main(self):
         await self.sio.connect(self.sio_url, namespaces=["/telemetry"]) 
         await self.sio.wait()    
+      
 
     def start(self):
         asyncio.get_event_loop().run_until_complete(self.start_ws_server)
