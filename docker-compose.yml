@@ -1,4 +1,4 @@
-version: "4"
+version: "3"
 
 services:
 
@@ -6,7 +6,7 @@ services:
     image: ricardo-backend
     container_name: ricardo-backend
     environment:
-      - DEVICE=/dev/ricardo_device
+      - RICARDO_BACKEND_DEVICE=/dev/ricardo_device
     ports:
       - 1337:1337
     devices:
