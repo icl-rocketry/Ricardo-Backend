@@ -31,7 +31,7 @@ def format_package(data_dict):
         if (key == "system_status"):
             data_dict[key] = decode_system_status(data_dict[key])
         elif (key == "system_time"):
-            data_dict[key] = system_time()
+            data_dict[key] = int(data_dict[key])
         elif (key == "connection_status"):
             data_dict[key] = decode_boolean_string(data_dict[key])
         else:

@@ -64,7 +64,15 @@ class WebsocketForwarder():
             await asyncio.sleep(0.1)
 
     async def main(self):
-        await self.sio.connect(self.sio_url, namespaces=["/telemetry"]) 
+        
+        while True:
+            try:
+                await self.sio.connect(self.sio_url, namespaces=["/telemetry"]) 
+                break
+            except socketio.exceptions.ConnectionError:
+                print("[WebsocketForwarder]: Couldnt connect to SIO server, trying again!")
+                await asyncio.sleep(1)
+
         await self.sio.wait()    
       
 
