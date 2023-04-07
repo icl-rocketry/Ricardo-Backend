@@ -1,11 +1,23 @@
-# Base on default Python image
-FROM python:latest
+# Argument for base image (default: slim)
+ARG BASEIMAGE="debian-slim"
+
+## Base image using Debian
+FROM python:latest as debian
 
 # Update/upgrade packages
 RUN apt-get update && apt-get upgrade -y
 
-# Ensure python3 and pip3 are installed
-RUN apt-get install python3 python3-pip -y
+## Base image using slim Debian
+FROM python:slim as debian-slim
+
+# Update/upgrade packages
+RUN apt-get update && apt-get upgrade -y
+
+# Install git
+RUN apt-get install git -y
+
+## Ricardo-Backend image
+FROM $BASEIMAGE
 
 # Create backend directory
 RUN mkdir /ricardo-backend
