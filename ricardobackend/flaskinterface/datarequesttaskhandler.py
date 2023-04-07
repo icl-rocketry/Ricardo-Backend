@@ -1,7 +1,5 @@
 
 
-import threading
-import redis
 # import socketio
 import json
 import simplejson #needed to handle NaNs... smh
@@ -33,7 +31,6 @@ class DataRequestTask():
         
         self.fileName = "Logs/"+self.config['task_name']+"_"+datetime.now().strftime("%d_%m_%y_%H_%M_%S_%f")+'.csv'
 
-        newFile=False
 
 
         self.logfile = open(self.fileName,'x')

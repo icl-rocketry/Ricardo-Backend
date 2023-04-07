@@ -2,7 +2,6 @@ import asyncio
 import socketio
 import websockets
 import time
-import random
 import argparse
 
 MS_TO_NS = 1e6

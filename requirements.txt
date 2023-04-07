@@ -4,15 +4,9 @@ eventlet
 Flask
 Flask_SocketIO
 python-socketio
-# matplotlib
-# numpy
 pandas
-# pygame
-# PyOpenGL
 pyserial
-redis
 requests
-scipy
 urwid
 aiohttp
 websockets

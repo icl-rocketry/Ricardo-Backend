@@ -1,8 +1,6 @@
 import multiprocessing
 import argparse
-import signal
 import sys
-import redis
 import time
 
 from ricardobackend.flaskinterface import flaskinterface

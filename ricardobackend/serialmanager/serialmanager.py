@@ -1,10 +1,7 @@
-from serial.serialutil import PARITY_NONE
 # from .packets import *
 from pylibrnp.rnppacket import DeserializationError, RnpHeader
 import serial
 import time
-import redis
-import json
 from cobs import cobs
 import signal
 import sys

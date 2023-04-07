@@ -1,7 +1,7 @@
 # PACKAGES
 # flask packages
 from queue import Empty, Full
-from flask import Flask, jsonify, request, Response, render_template, send_from_directory
+from flask import Flask, request, render_template
 from flask_socketio import SocketIO, emit, send # added emit from flask_socketio
 import multiprocessing as mp
 import queue as q
@@ -24,12 +24,7 @@ from .emitter import EmitterClass
 #     from .datarequesttaskhandler import DataRequestTaskHandler
     
 # system packages
-import time
-import redis
-import json
-import signal
 import sys
-import os
 # third-party packages
 import eventlet # re-formatted eventlet comment
 '''
