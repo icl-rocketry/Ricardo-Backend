@@ -59,10 +59,72 @@
             "rssi": "int16_t",
             "snr": "float"
         },
+        "bitfield_decoders":
+        [
+            {
+                "variable_name":"state",
+                "bitfield":"system_status",
+                "flags":
+                [
+                    {"id":0,"description":"DEBUG"},
+                    {"id":1,"description":"PREFLIGHT"},
+                    {"id":2,"description":"LAUNCH"},
+                    {"id":3,"description":"FLIGHT"},
+                    {"id":4,"description":"RECOVERY"},
+                    {"id":5,"description":"SETUP"},
+                    {"id":6,"description":"GROUNDSTATION"}
+                ]
+            },
+            {
+                "variable_name":"flag_info",
+                "bitfield":"system_status",
+                "flags":
+                [
+                    {"id":7,"description":"DEBUG"}
+                ]
+            },
+            {
+                "variable_name":"flag_error",
+                "bitfield":"system_status",
+                "flags":
+                [
+                    {"id":8,"description":"SPI"},
+                    {"id":9,"description":"I2C"},
+                    {"id":10,"description":"SERIAL"},
+                    {"id":11,"description":"LORA"},
+                    {"id":12,"description":"BARO"},
+                    {"id":13,"description":"BATT"},
+                    {"id":14,"description":"GPS"},
+                    {"id":15,"description":"IMU"},
+                    {"id":16,"description":"H_ACCEL"},
+                    {"id":17,"description":"MAG"},
+                    {"id":18,"description":"ESTIMATOR"},
+                    {"id":19,"description":"SD"},
+                    {"id":20,"description":"FLASH"},
+                    {"id":21,"description":"CAN"},
+                    {"id":22,"description":"FLIGHTCHECK"},
+                    {"id":23,"description":"ORIENTATION"},
+                    {"id":24,"description":"BATT"}
+                ]
+            },
+            {
+                "variable_name":"flightphase",
+                "bitfield":"system_status",
+                "flags":
+                [
+                    {"id":25,"description":"BOOST"},
+                    {"id":26,"description":"COAST"},
+                    {"id":27,"description":"APOGEE"},
+                    {"id":28,"description":"DROGUE CHUTE"},
+                    {"id":29,"description":"MAIN CHUTE"}
+                ]
+            }
+        ],
         "rxCounter": 0,
         "txCounter": 0,
         "connected": true,
         "lastReceivedPacket": ""
     }
 ]
+
 

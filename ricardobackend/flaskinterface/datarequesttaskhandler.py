@@ -7,6 +7,7 @@ import simplejson #needed to handle NaNs... smh
 import time
 from pylibrnp import defaultpackets
 from pylibrnp import dynamic_rnp_packet_generator as drpg
+from pylibrnp import bitfield_decoder
 import csv
 import sys
 import signal
@@ -22,7 +23,10 @@ class DataRequestTask():
     def __init__(self,jsonconfig):
         
         self.config = None
+
         self.packet_class = None #class type representing incomming data packet
+        self.bitfield_decoder_list = [] #bitfield decoders to decode system status strings
+
         self.updateConfig(jsonconfig)
 
         self.connectionTimeout = 5000 #in ms
@@ -48,6 +52,15 @@ class DataRequestTask():
         self.config['lastReceivedPacket'] = ""
         #generate dynamic type and store type
         self.packet_class = drpg.DynamicRnpPacketGenerator('anon_packettype',self.config['packet_descriptor']).getClass()
+        
+        self.bitfield_decoder_list = jsonconfig.get('bitfield_decoders',[])
+        for decoder in self.bitfield_decoder_list:
+            try:
+                decoder['decoder'] = bitfield_decoder.BitfieldDecoder(decoder['flags'])
+            except KeyError:
+                print('[Data Task Request Handler] Bad Config, ignoring entry' + decoder)
+                continue
+        
 
     def requestUpdate(self):
 
@@ -88,7 +101,25 @@ class DataRequestTask():
         deserialized_packet = self.packet_class.from_bytes(data)
         if self.config['logger']:
             self.csv_writer.writerow(deserialized_packet.getData())
-        return deserialized_packet.getData()
+        
+        packetData = deserialized_packet.getData()
+        #decode bitfields if there are any
+        for decoder in self.bitfield_decoder_list:
+
+            variableName = decoder.get('variable_name',None)
+            if variableName is None:
+                continue
+            
+            if variableName in packetData.keys():
+                print('[ERROR - Data Task Request Handler] bitfield variable name already exists in decoded packet data, skipping...')
+                continue
+            
+            try:
+                packetData[variableName] = decoder['decoder'].decode(int(packetData[decoder['bitfield']]))
+            except KeyError:
+                 print('[ERROR - Data Task Request Handler] key not found, skipping...')
+
+        return packetData
 
 
     def __exit__(self,*args):
