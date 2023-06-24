@@ -7,6 +7,7 @@ services:
     container_name: ricardo-backend
     environment:
       - RICARDO_BACKEND_DEVICE=/dev/ricardo_device
+      - RICARDO_BACKEND_FAKE_DATA=TRUE
     ports:
       - 1337:1337
     devices:

@@ -40,7 +40,7 @@ threading.main_thread() returning false which breaks cmd2...
 
 # APP INITIALIZATION
 # flask app 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static')
 app.register_blueprint(command_webui_bp, url_prefix="/command_ui")
 app.register_blueprint(telemetry_webui_bp, url_prefix="/telemetry_ui")
 
