@@ -40,7 +40,7 @@ threading.main_thread() returning false which breaks cmd2...
 
 # APP INITIALIZATION
 # flask app 
-app = Flask(__name__, static_folder='static')
+app = Flask(__name__)
 app.register_blueprint(command_webui_bp, url_prefix="/command_ui")
 app.register_blueprint(telemetry_webui_bp, url_prefix="/telemetry_ui")
 
@@ -124,35 +124,6 @@ def get_response():
             return "NODATA",200
     else:
         return 'Bad Request \nNo Client ID supplied',400
-
-#method depreciated
-# @app.route('/telemetry', methods=['GET'])
-# def get_telemetry():
-#     #get telemetry data from redis db
-#     #the telemetry key will be a json object
-#     #prcess the request args to retrieve task_id
-#     args = request.args
-#     print(args)
-#     args.to_dict()
-#     task_id:str = "telemetry:" + args.get("task_id")
-#     if r is None:
-#         return '''Redis client not setup in flaskinterface.py, 
-#         likely you are running the flaskinterface.py directly... 
-#         If you aren't, check that redis is running and is correctly 
-#         being setup when flaskinterface is being called''',503
-#     telemetry_data = r.get(task_id)
-#     if telemetry_data is not None:
-#         return json.loads(telemetry_data),200
-#     else:
-#         return "NODATA",200
-
-@app.route("/graph",methods=['get']) # -> depreciated, prefer using flask blueprints to serve
-def get_graph():
-    return render_template('graph.html',x_window = 100)
-
-@app.route("/map",methods=['get']) # -> depreciated, prefer using flask blueprints to serve
-def get_map():
-    return render_template('map.html',x_window = 100)
 
 
 # SOCKETIO APP
