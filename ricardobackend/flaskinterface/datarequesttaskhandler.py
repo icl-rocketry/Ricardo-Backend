@@ -46,6 +46,7 @@ class DataRequestTask():
         self.prevUpdateTime = 0
     
     def updateConfig(self,jsonconfig):
+        #deep copy here 
         self.config=copy.deepcopy(jsonconfig)
         self.config['rxCounter'] = 0
         self.config['txCounter'] = 0
@@ -54,7 +55,7 @@ class DataRequestTask():
         #generate dynamic type and store type
         self.packet_class = drpg.DynamicRnpPacketGenerator('anon_packettype',self.config['packet_descriptor']).getClass()
         
-        self.bitfield_decoder_list = jsonconfig.get('bitfield_decoders',[])
+        self.bitfield_decoder_list = copy.deepcopy(jsonconfig.get('bitfield_decoders',[]))
         for decoder in self.bitfield_decoder_list:
             try:
                 decoder['decoder'] = bitfield_decoder.BitfieldDecoder(decoder['flags'])
