@@ -7,7 +7,7 @@ import multiprocessing as mp
 import queue as q
 
 
-
+from .taskhandler_webui import taskhandler_webui_bp
 from .telemetry_webui import telemetry_webui_bp
 from .command_webui import command_webui_bp
 from .datarequesttaskhandler import DataRequestTaskHandler
@@ -43,6 +43,7 @@ threading.main_thread() returning false which breaks cmd2...
 app = Flask(__name__)
 app.register_blueprint(command_webui_bp, url_prefix="/command_ui")
 app.register_blueprint(telemetry_webui_bp, url_prefix="/telemetry_ui")
+app.register_blueprint(taskhandler_webui_bp, url_prefix="/taskhandler_ui")
 
 # app = Flask(__name__, static_folder='static/react')
 #app = Flask(__name__)
