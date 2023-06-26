@@ -7,4 +7,4 @@ taskhandler_webui_bp = Blueprint('taskhandler_webui_bp', __name__,
 
 @taskhandler_webui_bp.route('/')
 def taskhandler_webui_index():
-    return render_template('taskhandler_webui.html')
+    return render_template('index.html')

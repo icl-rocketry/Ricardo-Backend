@@ -25,9 +25,9 @@ class EmitterClass():
         if self.index < len(self.data_array):
             item = self.data_array[self.index]
             package = processor.format_package(item["data"])
-            print(package)
-            print("Emitting package " + str(self.index))
-            self.sio.emit("fc_telemetry", package, namespace="/telemetry")
+            # print(package)
+            # print("Emitting package " + str(self.index))
+            # self.sio.emit("fc_telemetry", package, namespace="/telemetry")
       
 
             self.index += 1

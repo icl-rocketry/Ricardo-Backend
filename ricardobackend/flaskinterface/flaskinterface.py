@@ -133,6 +133,10 @@ def connect_telemetry():
     # maybe emit the newest telemetry so connecting clients know whats up
     pass
 
+@socketio.on('connect', namespace='/data_request_handler')
+def connect():
+    pass
+
 @socketio.on('connect', namespace='/')
 def connect():
     pass
@@ -311,6 +315,7 @@ def startFlaskInterface(sendQueue:mp.Queue = None,receiveQueue:mp.Queue = None,f
         print("Reading fake signal from " + fake_signal_filename)
         print("Starting server on port " + str(flaskport) + "...")
 
+        socketio.start_background_task(startDataRequestHandler,mp.Queue,dtrh_receiveQ)
         socketio.start_background_task(__DummySignalBroadcastTask__)
         socketio.run(app, host=flaskhost, port=flaskport, debug=True, use_reloader=False)
         cleanup()

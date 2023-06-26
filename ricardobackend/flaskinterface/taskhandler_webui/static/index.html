@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width" />
+		
+		<link href="./_app/immutable/assets/2.4d5da15b.css" rel="stylesheet">
+		<link rel="modulepreload" href="./_app/immutable/entry/start.965f088e.js">
+		<link rel="modulepreload" href="./_app/immutable/chunks/scheduler.ad635580.js">
+		<link rel="modulepreload" href="./_app/immutable/chunks/singletons.f6f37218.js">
+		<link rel="modulepreload" href="./_app/immutable/entry/app.b8c4caa7.js">
+		<link rel="modulepreload" href="./_app/immutable/chunks/index.3af7384b.js">
+		<link rel="modulepreload" href="./_app/immutable/nodes/0.0f11730c.js">
+		<link rel="modulepreload" href="./_app/immutable/nodes/2.1a4f1883.js">
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<div style="display: contents">  <main class="svelte-1mghgtr"><div class="container svelte-1mghgtr"><div class="left svelte-1mghgtr"><div><img src="/_app/immutable/assets/ICLR-LOGO.bc213050.png" class="logo svelte-1mghgtr" alt="Vite Logo"></div> <h1 class="svelte-1mghgtr" data-svelte-h="svelte-1vfjh0d">Task Handler UI</h1> <button class="svelte-1r9nxin">Manually Refresh </button> <button class="svelte-1r9nxin">Clear Tasks </button> <div class="taskListDiv svelte-1x5vjoc"><h3 data-svelte-h="svelte-vn6g9g">Tasks:</h3> <ol class="svelte-1x5vjoc"></ol> </div></div> <div class="right svelte-1mghgtr">Currently Editing: Not valid JSON <textarea spellcheck="false" class="svelte-102aayz">Click on a task to edit it</textarea> <button class="svelte-1r9nxin">Save to disk </button> <button class="svelte-1r9nxin">New Task </button> <button class="svelte-1r9nxin">Update task </button> <button class="svelte-1r9nxin">Delete </button></div></div> <h3 data-svelte-h="svelte-1k0u0pr">Errors</h3> <div class="errorListDiv svelte-tu5w9j"><pre></pre> </div> </main> 
+			
+			<script>
+				{
+					__sveltekit_1tjzz4k = {
+						base: new URL(".", location).pathname.slice(0, -1),
+						env: {}
+					};
+
+					const element = document.currentScript.parentElement;
+
+					const data = [null,null];
+
+					Promise.all([
+						import("./_app/immutable/entry/start.965f088e.js"),
+						import("./_app/immutable/entry/app.b8c4caa7.js")
+					]).then(([kit, app]) => {
+						kit.start(app, element, {
+							node_ids: [0, 2],
+							data,
+							form: null,
+							error: null
+						});
+					});
+				}
+			</script>
+		</div>
+	</body>
+</html>
