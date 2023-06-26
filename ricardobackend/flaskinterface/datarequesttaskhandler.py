@@ -11,6 +11,7 @@ from pylibrnp import bitfield_decoder
 import csv
 import sys
 import signal
+import copy
 from datetime import datetime
 import multiprocessing as mp
 from queue import Full,Empty
@@ -45,7 +46,7 @@ class DataRequestTask():
         self.prevUpdateTime = 0
     
     def updateConfig(self,jsonconfig):
-        self.config=jsonconfig
+        self.config=copy.deepcopy(jsonconfig)
         self.config['rxCounter'] = 0
         self.config['txCounter'] = 0
         self.config['connected'] = True
@@ -164,6 +165,7 @@ class DataRequestTaskHandler():
         """Returns the current running tasks within the data request task handler as a json"""
         #concatenate all task configs into single dict and emit to all clients
         running_tasks = [task.config for task in self.task_container.values()]
+        print(running_tasks)
         self.sio.emit('runningTasks',running_tasks,namespace='/data_request_handler')
         
       

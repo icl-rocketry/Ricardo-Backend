@@ -1,5 +1,5 @@
-from pylibrnp.defaultpackets import *
-from pylibrnp.rnppacket import *
+# from pylibrnp.defaultpackets import *
+# from pylibrnp.rnppacket import *
 # import ..pylibrnp.defaultpackets
 # import ..pylibrnp.rnppacket
 
@@ -10,7 +10,7 @@ import json
 
 
 
-sio = socketio.Client(logger=True, engineio_logger=True)
+sio = socketio.Client(logger=False, engineio_logger=False)
 
 task_json = {
     "task_name": "fc_telemetry",
@@ -104,9 +104,9 @@ if __name__ == "__main__":
     sio.connect('http://' + args["host"] + ':' + str(args['port']) + '/',namespaces=['/','/telemetry','/data_request_handler','/messages'])
 
     # input("get")
-    # sio.emit('getRunningTasks',namespace='/data_request_handler')
+    sio.emit('getRunningTasks',namespace='/data_request_handler')
     # input("get")
-    sio.emit('newTaskConfig',task_json,namespace='/data_request_handler')
+    # sio.emit('newTaskConfig',task_json,namespace='/data_request_handler')
     # input("get")
     # sio.emit('getRunningTasks',namespace='/data_request_handler')
     # input("get")
