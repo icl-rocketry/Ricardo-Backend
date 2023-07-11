@@ -1,3 +1,6 @@
 [submodule "external/pylibrnp"]
 	path = external/pylibrnp
 	url = https://github.com/icl-rocketry/pylibrnp
+[submodule "ricardobackend/flaskinterface/taskhandler_webui/TaskHandler"]
+	path = ricardobackend/flaskinterface/taskhandler_webui/TaskHandler
+	url = https://github.com/icl-rocketry/TaskHandler
