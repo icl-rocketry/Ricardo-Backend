@@ -132,7 +132,7 @@ class DataRequestTask():
 class DataRequestTaskHandler():
 
 
-    def __init__(self,sio_instance,sendQ=None,receiveQ = None,socketiohost=None,socketioport=None,prefix:str = "flaskinterface"):
+    def __init__(self,sio_instance,sendQ=None,receiveQ = None,socketiohost=None,socketioport=None,prefix:str = "flaskinterface",verbose:bool=False):
         # self.r = redis.Redis(redishost,redisport)
         if sendQ is None or receiveQ is None:
             raise Exception('No send queue or receive queue provided')
@@ -148,6 +148,8 @@ class DataRequestTaskHandler():
 
         # assign functions to events
         self.sio = sio_instance
+
+        self.verbose=verbose
 
         self.sio.on_event('getRunningTasks',self.on_get_running_tasks,namespace='/data_request_handler')
         self.sio.on_event('newTaskConfig',self.on_new_task_config,namespace='/data_request_handler')
@@ -166,7 +168,8 @@ class DataRequestTaskHandler():
         """Returns the current running tasks within the data request task handler as a json"""
         #concatenate all task configs into single dict and emit to all clients
         running_tasks = [task.config for task in self.task_container.values()]
-        print(running_tasks)
+        if self.verbose:
+            print(running_tasks)
         self.sio.emit('runningTasks',running_tasks,namespace='/data_request_handler')
         
       

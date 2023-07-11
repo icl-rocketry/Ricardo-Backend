@@ -172,8 +172,8 @@ def disconnect_command():
 
 
 # TASKS
-def startDataRequestHandler(sendQ:mp.Queue,dtrh_receiveQ:mp.Queue):
-    datarequesthandler = DataRequestTaskHandler(socketio,sendQ = sendQ,receiveQ = dtrh_receiveQ)
+def startDataRequestHandler(sendQ:mp.Queue,dtrh_receiveQ:mp.Queue,verbose:bool=False):
+    datarequesthandler = DataRequestTaskHandler(socketio,sendQ = sendQ,receiveQ = dtrh_receiveQ,verbose=verbose)
     datarequesthandler.mainloop()
 
 #socketio repsonse task
@@ -226,10 +226,10 @@ def __SocketIOMessageHandler__(message:dict):
 
 
 # dummy signal
-def __DummySignalBroadcastTask__():
+def __DummySignalBroadcastTask__(verbose=False):
     global dummy_signal_running
     dummy_signal_running = True
-    e = EmitterClass(socketio,'telemetry-log')
+    e = EmitterClass(socketio,'telemetry-log',verbose=verbose)
     while dummy_signal_running:
         e.emit() #call emit
     print('DummySignalBroadCastTask Killed')
@@ -307,7 +307,7 @@ def cleanup(sig=None,frame=None): #ensure the telemetry broadcast thread has bee
 
 # DUTY FUNCTION
 def startFlaskInterface(sendQueue:mp.Queue = None,receiveQueue:mp.Queue = None,flaskhost="0.0.0.0", flaskport=5000, 
-                         fake_data=False):
+                         fake_data=False,verbose=False):
     
     if (fake_data):
         # fake signal handler for ui testing only!!!
@@ -315,8 +315,8 @@ def startFlaskInterface(sendQueue:mp.Queue = None,receiveQueue:mp.Queue = None,f
         print("Reading fake signal from " + fake_signal_filename)
         print("Starting server on port " + str(flaskport) + "...")
 
-        socketio.start_background_task(startDataRequestHandler,mp.Queue,dtrh_receiveQ)
-        socketio.start_background_task(__DummySignalBroadcastTask__)
+        socketio.start_background_task(startDataRequestHandler,mp.Queue,dtrh_receiveQ,verbose=verbose)
+        socketio.start_background_task(__DummySignalBroadcastTask__,verbose=verbose)
         socketio.run(app, host=flaskhost, port=flaskport, debug=True, use_reloader=False)
         cleanup()
 
@@ -330,7 +330,7 @@ def startFlaskInterface(sendQueue:mp.Queue = None,receiveQueue:mp.Queue = None,f
             sendQ = sendQueue
             print("Server starting on port " + str(flaskport) + " ...")
 
-            socketio.start_background_task(startDataRequestHandler,sendQ,dtrh_receiveQ)
+            socketio.start_background_task(startDataRequestHandler,sendQ,dtrh_receiveQ,verbose=verbose)
             socketio.start_background_task(__FlaskInterfaceResponseHandler__,receiveQueue,dtrh_receiveQ)
             socketio.run(app, host=flaskhost, port=flaskport, debug=False, use_reloader=False)
 

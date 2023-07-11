@@ -64,6 +64,7 @@ def startFlaskInterface(args,sendQueue,receiveQueue):
     flaskinterface.startFlaskInterface(flaskhost=args['flask_host'],
                                        flaskport=args['flask_port'],
                                        fake_data=args['fake_data'],
+                                       verbose=args['verbose'],
                                        sendQueue=sendQueue,
                                        receiveQueue=receiveQueue)
 
