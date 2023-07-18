@@ -188,7 +188,7 @@ class DataRequestTaskHandler():
         self.task_container.pop(task_id).__exit__() #call destructor and delete that task
         
 
-    def on_save_handler_config(self):
+    def on_save_handler_config(self,data):
 
         if self.task_container is False:
             print("No Tasks, Saving empty json")
