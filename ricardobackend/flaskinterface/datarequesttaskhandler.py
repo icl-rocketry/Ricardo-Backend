@@ -196,7 +196,7 @@ class DataRequestTaskHandler():
         else:
             handler_config = [task.config for task in self.task_container.values()]
         with open(self.config_filename,'w',encoding='utf-8') as file:
-            json.dump(handler_config,file)
+            file.write(json.dumps(handler_config,indent=1))
     
     def load_handler_config(self):
         try:
