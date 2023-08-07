@@ -84,7 +84,7 @@ class DataRequestTask():
                 command_packet = defaultpackets.SimpleCommandPacket(command = requestConfig['command_id'],arg=requestConfig['command_arg'])
                 command_packet.header.source = requestConfig['source']
                 command_packet.header.destination = requestConfig['destination']
-                command_packet.header.source_service = 2 #this is not too important
+                command_packet.header.source_service = self.requestConfig.get('source_service',2) #this is not too important
                 command_packet.header.destination_service = requestConfig['destination_service']
                 command_packet.header.packet_type = 0 #command packet type is always zero
                 self.prevUpdateTime = time.time_ns()

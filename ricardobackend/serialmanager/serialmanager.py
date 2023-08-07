@@ -102,7 +102,7 @@ class SerialManager():
 				boot_messages += data.decode("utf-8")
 			except:
 				boot_messages += str(data)
-		if self.verbose:
+		# if self.verbose:
 			print(boot_messages)
 
 	def __readPacket__(self):
@@ -125,9 +125,10 @@ class SerialManager():
 					self.__sendToUDP__(decodedData) 
 					# print(decodedData)
 				except cobs.DecodeError as e:
-					print("Decode Error, the following data could not be decoded...")
+					print("Decoded Error, the following data could not be decoded...")
 					print(e)
 					print(self.receiveBuffer)
+					
 				#empty receive buffer
 				self.receiveBuffer = []
 			else:

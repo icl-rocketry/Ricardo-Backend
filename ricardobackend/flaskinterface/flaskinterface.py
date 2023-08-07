@@ -242,6 +242,7 @@ def __FlaskInterfaceResponseHandler__(receiveQ:mp.Queue,dtrh_receiveQ:mp.Queue):
         try:
             item:dict = receiveQ.get(block=False)  #expect a dict
             item_type = item['type'] #retrieve type of item
+        
             if item_type == 'response':
                 #response data will have a dict of the following form
                 #{"identifier":identifier:dict,"data":responsedata:bytes}
