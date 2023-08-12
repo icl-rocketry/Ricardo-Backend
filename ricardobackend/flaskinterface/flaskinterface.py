@@ -134,8 +134,13 @@ def connect_telemetry():
     pass
 
 @socketio.on('connect', namespace='/data_request_handler')
-def connect():
+def dtrh_connect():
     pass
+
+@socketio.on('connect',namespace='/messages')
+def message_connect():
+    pass
+
 
 @socketio.on('connect', namespace='/')
 def connect():
