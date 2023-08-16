@@ -39,8 +39,8 @@ class DataRequestTask():
 
 
         self.logfile = open(self.fileName,'x')
-
-        self.csv_writer = csv.DictWriter(self.logfile,fieldnames=self.packet_class().packetvars)
+        logfile_header = ["BackendTime"] + self.packet_class().packetvars
+        self.csv_writer = csv.DictWriter(self.logfile,fieldnames=logfile_header)
         self.csv_writer.writeheader()
 
         self.prevUpdateTime = 0
@@ -102,7 +102,8 @@ class DataRequestTask():
 
         deserialized_packet = self.packet_class.from_bytes(data)
         if self.config['logger']:
-            self.csv_writer.writerow(deserialized_packet.getData())
+            data_row = {"BackendTime":time.time()*1000,**deserialized_packet.getData()}
+            self.csv_writer.writerow(data_row)
         
         packetData = deserialized_packet.getData()
         #decode bitfields if there are any
