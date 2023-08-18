@@ -24,7 +24,7 @@ services:
     ports:
       - 3000:3000
     volumes:
-      - /home/pi/temp/grafana.db:/var/lib/grafana/grafana.db
+      - ./Config/grafana.db:/var/lib/grafana/grafana.db
     networks:
       - backend
     restart: always
