@@ -10,8 +10,8 @@ services:
       - RICARDO_BACKEND_FAKE_DATA=TRUE
     ports:
       - 1337:1337
-    devices:
-      - /dev/ttyUSB0:/dev/ricardo_device
+    volumes:
+      - ./volumes/ricardo-backend/logs/:/Logs/
     networks:
       - backend
     restart: always
@@ -24,8 +24,8 @@ services:
     ports:
       - 3000:3000
     volumes:
-      - ./Config/grafana/grafana.db:/var/lib/grafana/grafana.db
-      - ./Config/grafana/plugins/:/var/lib/grafana/plugins/
+      - ./volumes/grafana/grafana.db:/var/lib/grafana/grafana.db
+      - ./volumes/grafana/plugins/:/var/lib/grafana/plugins/
     networks:
       - backend
     restart: always
