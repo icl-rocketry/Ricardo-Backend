@@ -24,7 +24,8 @@ services:
     ports:
       - 3000:3000
     volumes:
-      - ./Config/grafana.db:/var/lib/grafana/grafana.db
+      - ./Config/grafana/grafana.db:/var/lib/grafana/grafana.db
+      - ./Config/grafana/plugins/:/var/lib/grafana/plugins/
     networks:
       - backend
     restart: always
