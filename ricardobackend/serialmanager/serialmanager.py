@@ -105,7 +105,7 @@ class SerialManager():
 			except:
 				boot_messages += str(data)
 		# if self.verbose:
-			print(boot_messages)
+		print(boot_messages)
 
 	def __readPacket__(self):
 		#cobs decode
