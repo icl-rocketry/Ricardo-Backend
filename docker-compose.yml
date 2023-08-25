@@ -5,6 +5,7 @@ services:
   ricardo-backend:
     image: ricardo-backend
     container_name: ricardo-backend
+    user: "${UID}:${GID}"
     environment:
       - RICARDO_BACKEND_DEVICE=/dev/ricardo_device
       - RICARDO_BACKEND_FAKE_DATA=TRUE
@@ -19,6 +20,7 @@ services:
   grafana:
     image: grafana/grafana-oss
     container_name: grafana
+    user: "${UID}:${GID}"
     environment:
       - GF_INSTALL_PLUGINS=golioth-websocket-datasource,agenty-flowcharting-panel
     ports:
