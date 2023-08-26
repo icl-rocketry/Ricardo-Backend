@@ -95,7 +95,8 @@ class SerialManager():
 		#print('esp32 reset')
 		self.ser.flushInput()
 		time.sleep(1)
-		self.ser.write('\n'.encode()) #send new line so that usbcdc responds
+
+		# self.ser.write('\n'.encode()) #send new line so that usbcdc responds
 
 		#get boot messages after reboot
 		while (self.ser.in_waiting):

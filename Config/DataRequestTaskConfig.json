@@ -235,5 +235,70 @@
   "txCounter": 0,
   "connected": true,
   "lastReceivedPacket": ""
+ },
+ {
+  "task_name": "oven_stuff",
+  "autostart": false,
+  "poll_delta": 20,
+  "running": false,
+  "logger": true,
+  "receiveOnly": false,
+  "request_config": {
+   "source": 1,
+   "destination": 0,
+   "destination_service": 2,
+   "command_id": 8,
+   "command_arg": 0
+  },
+  "packet_descriptor": {
+   "pn": "float",
+   "pe": "float",
+   "pd": "float",
+   "vn": "float",
+   "ve": "float",
+   "vd": "float",
+   "an": "float",
+   "ae": "float",
+   "ad": "float",
+   "roll": "float",
+   "temp": "float",
+   "yaw": "float",
+   "q0": "float",
+   "q1": "float",
+   "q2": "float",
+   "q3": "float",
+   "lat": "float",
+   "lng": "float",
+   "alt": "float",
+   "sat": "float",
+   "system_status": "uint32_t",
+   "system_time": "uint64_t"
+  },
+  "rxCounter": 0,
+  "txCounter": 0,
+  "connected": true,
+  "lastReceivedPacket": ""
+ },
+ {
+  "task_name": "freeram",
+  "autostart": false,
+  "poll_delta": 1,
+  "running": false,
+  "logger": true,
+  "receiveOnly": false,
+  "request_config": {
+   "source": 1,
+   "destination": 0,
+   "destination_service": 2,
+   "command_id": 250,
+   "command_arg": 1
+  },
+  "packet_descriptor": {
+   "ram": "uint32_t"
+  },
+  "rxCounter": 0,
+  "txCounter": 0,
+  "connected": true,
+  "lastReceivedPacket": ""
  }
 ]

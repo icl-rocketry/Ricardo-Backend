@@ -68,9 +68,9 @@ flaskinterface_response_task_running:bool = False
 # dtrh_receiveQ_maxsize = 1000
 dtrh_receiveQ:mp.Queue = mp.Queue()
 
-# misc
-prev_time = 0
-updateTimePeriod = 0.01 #in seconds
+# # misc
+# prev_time = 0
+# updateTimePeriod = 0.01 #in seconds
 
 
 

@@ -2,16 +2,13 @@ import multiprocessing
 import argparse
 import sys
 import time
+import signal
 
 from ricardobackend.flaskinterface import flaskinterface
 from ricardobackend.serialmanager import serialmanager
 from ricardobackend.websocketforwarder import websocketforwarder
 
 
-# 
-# SendQ -> {type,clientid,data}
-# ReceiveQ:CLIENTID -> {type,clientid?,data}
-# 
 
 
 # Argument Parsing
@@ -30,14 +27,14 @@ ap.add_argument('--fake_data',required=False, help="serve fake data",action='sto
 
 argsin = vars(ap.parse_args())
 
+proclist = {}
 
-def exitBackend(proclist):
+def exitBackend(sig,frame):
+    global proclist
     for key in proclist:
         print("Killing: " + key + " Pid: " + str(proclist[key].pid))
         proclist[key].terminate()
         proclist[key].join()
-
-    proclist = {}
 
     sys.exit(0)
 
@@ -70,7 +67,9 @@ def startFlaskInterface(args,sendQueue,receiveQueue):
 
 
 if __name__ == '__main__':
-    proclist = {}
+
+    signal.signal(signal.SIGINT,exitBackend)
+    signal.signal(signal.SIGTERM,exitBackend)
 
     sendQueue = multiprocessing.Queue()
     receiveQueue_dict = {"flaskinterface":multiprocessing.Queue()}
@@ -92,7 +91,6 @@ if __name__ == '__main__':
     while(True):
         pass
 
-    exitBackend(proclist)
 
 
 

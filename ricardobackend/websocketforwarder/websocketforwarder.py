@@ -3,6 +3,8 @@ import socketio
 import websockets
 import time
 import argparse
+import signal
+import sys
 
 MS_TO_NS = 1e6
 NS_TO_MS = 1e-6
@@ -12,6 +14,12 @@ class WebsocketForwarder():
     data_queue_dict = {} #threadsafe thru gil.. rip
 
     def __init__(self,sio_host:str="localhost",sio_port:int=1337,ws_host="localhost",ws_port="8080"):
+        signal.signal(signal.SIGINT,self.exitHandler)
+        signal.signal(signal.SIGTERM,self.exitHandler)
+
+        self.run = True
+        self.eventLoop = None
+
         self.sio_url = "http://"+sio_host+":"+str(sio_port)+"/"
         self.start_ws_server = websockets.serve(self.send_to_websocket, ws_host, ws_port,ping_timeout = None)
         #register socketio client callbacks
@@ -19,6 +27,9 @@ class WebsocketForwarder():
         self.sio.on('connect_error',self.connect_error)
         self.sio.on('disconnect',self.disconnect)
         self.sio.on('*',self.forward_telemetry,namespace='/telemetry')
+
+       
+        
 
 
     async def connect(self):
@@ -56,7 +67,7 @@ class WebsocketForwarder():
         data_queue = self.data_queue_dict[telemetry_key]
         print(telemetry_key + " connected")
 
-        while True:
+        while self.run:
             #we need to update this to make sure the data being forwarded is realtime...
             data = await data_queue.get()
             await websocket.send(f"{{\"timestamp\": {time.time_ns()*NS_TO_MS}, \"data\": {data}}}") #Todo make this not horrible -> maybe timestap should be set on the dtrh rather than here
@@ -64,7 +75,7 @@ class WebsocketForwarder():
 
     async def main(self):
         
-        while True:
+        while self.run:
             try:
                 await self.sio.connect(self.sio_url, namespaces=["/telemetry"]) 
                 break
@@ -78,7 +89,14 @@ class WebsocketForwarder():
     def start(self):
         asyncio.get_event_loop().run_until_complete(self.start_ws_server)
         asyncio.get_event_loop().run_until_complete(self.main())
-        asyncio.get_event_loop().run_forever()
+        self.eventLoop = asyncio.get_event_loop().run_forever()
+
+    def exitHandler(self):
+        if self.eventLoop is not None:
+            self.eventLoop.close()
+        print('\nWebsocketforwarder Exited!')
+        sys.exit(0)
+
 
 
 
