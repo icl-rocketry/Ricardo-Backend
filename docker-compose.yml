@@ -5,13 +5,14 @@ services:
   ricardo-backend:
     image: ricardo-backend
     container_name: ricardo-backend
+    user: "${UID}:${GID}"
     environment:
       - RICARDO_BACKEND_DEVICE=/dev/ricardo_device
       - RICARDO_BACKEND_FAKE_DATA=TRUE
     ports:
       - 1337:1337
-    devices:
-      - /dev/ttyUSB0:/dev/ricardo_device
+    volumes:
+      - ./volumes/ricardo-backend/logs/:/Logs/
     networks:
       - backend
     restart: always
@@ -19,12 +20,14 @@ services:
   grafana:
     image: grafana/grafana-oss
     container_name: grafana
+    user: "${UID}:${GID}"
     environment:
-      - GF_INSTALL_PLUGINS=golioth-websocket-datasource
+      - GF_INSTALL_PLUGINS=golioth-websocket-datasource,agenty-flowcharting-panel
     ports:
       - 3000:3000
     volumes:
-      - /home/pi/temp/grafana.db:/var/lib/grafana/grafana.db
+      - ./volumes/grafana/grafana.db:/var/lib/grafana/grafana.db
+      - ./volumes/grafana/plugins/:/var/lib/grafana/plugins/
     networks:
       - backend
     restart: always
