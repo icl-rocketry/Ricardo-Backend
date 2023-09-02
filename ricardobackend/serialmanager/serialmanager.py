@@ -96,8 +96,6 @@ class SerialManager():
 		self.ser.flushInput()
 		time.sleep(1)
 
-		# self.ser.write('\n'.encode()) #send new line so that usbcdc responds
-
 		#get boot messages after reboot
 		while (self.ser.in_waiting):
 			data = self.ser.read(1)

@@ -1,5 +1,5 @@
 # Log files
-Logs/
+Logs/*
 
 # IDE
 .vscode/
