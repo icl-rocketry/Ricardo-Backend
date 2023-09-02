@@ -70,8 +70,10 @@ class WebsocketForwarder():
         while self.run:
             #we need to update this to make sure the data being forwarded is realtime...
             data = await data_queue.get()
+            # async with asyncio.timeout(timeout=1):
+                # await websocket.send(f"{{\"timestamp\": {time.time_ns()*NS_TO_MS}, \"data\": {data}}}") #Todo make this not horrible -> maybe timestap should be set on the dtrh rather than here
             await websocket.send(f"{{\"timestamp\": {time.time_ns()*NS_TO_MS}, \"data\": {data}}}") #Todo make this not horrible -> maybe timestap should be set on the dtrh rather than here
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.01)
 
     async def main(self):
         
