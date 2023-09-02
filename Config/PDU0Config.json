@@ -1,0 +1,49 @@
+[
+    {
+    "task_name": "pdu0_telemetry",
+    "autostart": false,
+    "poll_delta": 20,
+    "running": false,
+    "logger": true,
+    "receiveOnly": false,
+    "request_config": {
+     "source": 1,
+     "destination": 5,
+     "destination_service": 2,
+     "command_id": 4,
+     "command_arg": 0
+    },
+    "packet_descriptor": {
+     "logicVoltage": "uint16_t",
+     "logicPerc": "uint16_t",
+     "depVoltage": "uint16_t",
+     "depPercent": "uint16_t",
+     "system_status": "uint32_t",
+     "system_time": "uint64_t"
+    },
+    "bitfield_decoders": [
+    {
+        "variable_name": "state",
+        "bitfield": "system_status",
+        "flags": [
+        {
+            "id": 0,
+            "description": "STATE_IDLE"
+        },
+        {
+            "id": 1,
+            "description": "STATE_READY"
+        },
+        {
+            "id": 1,
+            "description": "STATE_LIVE"            
+        }
+    ]
+    }
+    ],
+    "rxCounter": 0,
+    "txCounter": 0,
+    "connected": true,
+    "lastReceivedPacket": ""
+}]
+
