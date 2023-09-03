@@ -61,7 +61,7 @@
   },
   "bitfield_decoders": [
    {
-    "variable_name": "state",
+    "variable_name": "status",
     "bitfield": "system_status",
     "flags": [
      {
@@ -304,7 +304,7 @@
  {
   "task_name": "act0_telemetry",
   "autostart": false,
-  "poll_delta": 100,
+  "poll_delta": 250,
   "running": false,
   "logger": true,
   "receiveOnly": false,
@@ -340,7 +340,7 @@
  {
   "task_name": "act1_telemetry",
   "autostart": false,
-  "poll_delta": 100,
+  "poll_delta": 250,
   "running": false,
   "logger": true,
   "receiveOnly": false,
@@ -376,7 +376,7 @@
  {
   "task_name": "act2_telemetry",
   "autostart": false,
-  "poll_delta": 100,
+  "poll_delta": 250,
   "running": false,
   "logger": true,
   "receiveOnly": false,
@@ -412,7 +412,7 @@
  {
   "task_name": "pdu0_telemetry",
   "autostart": false,
-  "poll_delta": 100,
+  "poll_delta": 250,
   "running": false,
   "logger": true,
   "receiveOnly": false,
@@ -459,7 +459,7 @@
  {
   "task_name": "pdu1_telemetry",
   "autostart": false,
-  "poll_delta": 100,
+  "poll_delta": 250,
   "running": false,
   "logger": true,
   "receiveOnly": false,
@@ -506,7 +506,7 @@
  {
   "task_name": "pyrdrg_telemetry",
   "autostart": false,
-  "poll_delta": 100,
+  "poll_delta": 250,
   "running": false,
   "logger": true,
   "receiveOnly": false,
@@ -523,8 +523,8 @@
   },
   "bitfield_decoders": [
    {
-    "variable_name": "state",
-    "bitfield": "component_status",
+    "variable_name": "component_status",
+    "bitfield": "state",
     "flags": [
      {
       "id": 0,
@@ -565,7 +565,7 @@
  {
   "task_name": "pyreng_telemetry",
   "autostart": false,
-  "poll_delta": 100,
+  "poll_delta": 250,
   "running": false,
   "logger": true,
   "receiveOnly": false,
@@ -582,8 +582,8 @@
   },
   "bitfield_decoders": [
    {
-    "variable_name": "state",
-    "bitfield": "component_status",
+    "variable_name": "component_status",
+    "bitfield": "state",
     "flags": [
      {
       "id": 0,
@@ -624,7 +624,7 @@
  {
   "task_name": "pyrmain_telemetry",
   "autostart": false,
-  "poll_delta": 100,
+  "poll_delta": 250,
   "running": false,
   "logger": true,
   "receiveOnly": false,
@@ -641,8 +641,8 @@
   },
   "bitfield_decoders": [
    {
-    "variable_name": "state",
-    "bitfield": "component_status",
+    "variable_name": "component_status",
+    "bitfield": "state",
     "flags": [
      {
       "id": 0,
@@ -683,7 +683,7 @@
  {
   "task_name": "sen0_telemetry",
   "autostart": false,
-  "poll_delta": 100,
+  "poll_delta": 250,
   "running": false,
   "logger": true,
   "receiveOnly": false,
@@ -734,7 +734,7 @@
  {
   "task_name": "sen1_telemetry",
   "autostart": false,
-  "poll_delta": 100,
+  "poll_delta": 250,
   "running": false,
   "logger": true,
   "receiveOnly": false,
@@ -785,7 +785,7 @@
  {
   "task_name": "srv2_telemetry",
   "autostart": false,
-  "poll_delta": 100,
+  "poll_delta": 250,
   "running": false,
   "logger": true,
   "receiveOnly": false,
@@ -802,8 +802,8 @@
   },
   "bitfield_decoders": [
    {
-    "variable_name": "state",
-    "bitfield": "component_status",
+    "variable_name": "component_status",
+    "bitfield": "state",
     "flags": [
      {
       "id": 0,
@@ -844,7 +844,7 @@
  {
   "task_name": "srv3_telemetry",
   "autostart": false,
-  "poll_delta": 100,
+  "poll_delta": 250,
   "running": false,
   "logger": true,
   "receiveOnly": false,
@@ -861,8 +861,8 @@
   },
   "bitfield_decoders": [
    {
-    "variable_name": "state",
-    "bitfield": "component_status",
+    "variable_name": "component_status",
+    "bitfield": "state",
     "flags": [
      {
       "id": 0,
@@ -903,7 +903,7 @@
  {
   "task_name": "srv4_telemetry",
   "autostart": false,
-  "poll_delta": 100,
+  "poll_delta": 250,
   "running": false,
   "logger": true,
   "receiveOnly": false,
@@ -920,8 +920,8 @@
   },
   "bitfield_decoders": [
    {
-    "variable_name": "state",
-    "bitfield": "component_status",
+    "variable_name": "component_status",
+    "bitfield": "state",
     "flags": [
      {
       "id": 0,
@@ -962,7 +962,7 @@
  {
   "task_name": "thanos_telemetry",
   "autostart": false,
-  "poll_delta": 100,
+  "poll_delta": 250,
   "running": false,
   "logger": true,
   "receiveOnly": false,
@@ -979,8 +979,8 @@
   },
   "bitfield_decoders": [
    {
-    "variable_name": "state",
-    "bitfield": "component_status",
+    "variable_name": "component_status",
+    "bitfield": "state",
     "flags": [
      {
       "id": 0,
@@ -1021,7 +1021,7 @@
  {
   "task_name": "sen0_raw_telemetry",
   "autostart": false,
-  "poll_delta": 100,
+  "poll_delta": 250,
   "running": false,
   "logger": true,
   "receiveOnly": false,
@@ -1068,7 +1068,7 @@
  {
   "task_name": "sen1_raw_telemetry",
   "autostart": false,
-  "poll_delta": 100,
+  "poll_delta": 250,
   "running": false,
   "logger": true,
   "receiveOnly": false,

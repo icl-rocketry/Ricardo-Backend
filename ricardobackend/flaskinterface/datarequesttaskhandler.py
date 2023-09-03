@@ -5,6 +5,7 @@ import json
 import simplejson #needed to handle NaNs... smh
 
 import time
+from pylibrnp import rnppacket
 from pylibrnp import defaultpackets
 from pylibrnp import dynamic_rnp_packet_generator as drpg
 from pylibrnp import bitfield_decoder
@@ -84,7 +85,7 @@ class DataRequestTask():
                 command_packet = defaultpackets.SimpleCommandPacket(command = requestConfig['command_id'],arg=requestConfig['command_arg'])
                 command_packet.header.source = requestConfig['source']
                 command_packet.header.destination = requestConfig['destination']
-                command_packet.header.source_service = requestConfig.get('source_service',2) #this is not too important
+                command_packet.header.source_service = requestConfig.get('source_service',0) #this is not too important
                 command_packet.header.destination_service = requestConfig['destination_service']
                 command_packet.header.packet_type = 0 #command packet type is always zero
                 self.prevUpdateTime = time.time_ns()
@@ -100,7 +101,12 @@ class DataRequestTask():
         self.config['lastReceivedPacket'] = data
         self.config['connected'] = True
 
-        deserialized_packet = self.packet_class.from_bytes(data)
+        try:
+            deserialized_packet = self.packet_class.from_bytes(data)
+        except rnppacket.DeserializationError as e:
+            print('[ERROR - Data Task Request Handler] - received badly formed packet: ' + str(e))
+            return None
+        
         if self.config['logger']:
             data_row = {"BackendTime":time.time()*1000,**deserialized_packet.getData()}
             self.csv_writer.writerow(data_row)
@@ -242,6 +248,8 @@ class DataRequestTaskHandler():
     def publish_new_data(self,data,task_id):
         task = self.task_container[task_id]
         decodedData = task.decodeData(data)
+        if decodedData is None:
+            return
         #publish to socketio
         #use simplejson to dump json as string so that NaNs are converted to null
         self.sio.emit(task_id,simplejson.dumps(decodedData,ignore_nan=True),namespace='/telemetry')
