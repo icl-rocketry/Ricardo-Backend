@@ -72,7 +72,7 @@ class SerialManager():
 				self.__checkSendQueue__()
 				self.__readPacket__()
 				self.__cleanupPacketRecord__()
-	
+		
 	def exitHandler(self,sig,frame):
 		print("Serial Manager Exited")
 		self.ser.close() #close serial port
@@ -171,13 +171,7 @@ class SerialManager():
 				print('[Serial-Manager]: receive queue full, dumping packet!')
 				return
 
-			# #add received packets to redis db
-			# self.rd.lpush(key,data)
-			# #set timeout for list so list will be deleted if never acsessed
-			# #ensure on any redis interfaces, that the expiry is reset to esnure we dont loose packets
-			# self.rd.expire(key , self.receivedQueueTimeout) 
 
-	
 		else:
 			#handle packets addressed to the local packet handler on the backend
 			if (uid == 0) and (header.destination_service == 0):
@@ -197,10 +191,14 @@ class SerialManager():
 	def __sendPacket__(self,data:bytes,identifier:dict):
 		header = RnpHeader.from_bytes(data)#decode header
 		uid = self.__generateUID__() #get uuid
+		print(uid)
 		header.uid = uid #get uuid
 		serialized_header = header.serialize() #re-serialize header
 		modifieddata = bytearray(data)
 		modifieddata[:len(serialized_header)] = serialized_header
+
+		print( "serialmanager - " + str(id(identifier)))
+
 		self.packetRecord[uid] = [identifier,time.time()] #update packetrecord dictionary
 		#self.sendBuffer.append(data)#add packet to send buffer
 		self.__sendToUDP__(modifieddata)  #send data to udp monitor
@@ -230,19 +228,13 @@ class SerialManager():
 		try:
 			#item is a json object with structure 
 			#{data:bytes as hex string,
-			# clientid:""}
+			# identifier:"{}"}
 			item = self.sendQ.get_nowait()
 			self.__sendPacket__(bytes.fromhex(item['data']),item['identifier'])
 			self.prevSendTime = time.time_ns()
 		except Empty:
 			return
-		
-		# if self.rd.llen("SendQueue") > 0:
-		# 	item = json.loads(self.rd.rpop("SendQueue"))
-			
-		# 	self.__sendPacket__(bytes.fromhex(item["data"]),item["clientid"])
-		# 	self.prevSendTime = time.time_ns()
-				
+	
 		
 
 	def __generateUID__(self):
@@ -283,12 +275,6 @@ class SerialManager():
 					queue.put_nowait(json_message)
 				except Full:
 					print('[Serial-Manager]: receive Queue full, skipping message')
-
-			#check length of message queue before pushing 
-			# if (self.rd.llen("MessageQueue") > self.messageQueueSize):
-			# 	self.rd.delete("MessageQueue")
-			# self.rd.lpush("MessageQueue",json.dumps(json_message))
-			# self.rd.expire("MessageQueue" , self.receivedQueueTimeout) 
-
+					
 			return
 		

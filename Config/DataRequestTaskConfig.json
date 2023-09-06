@@ -2,13 +2,13 @@
  {
   "task_name": "fc_telemetry",
   "autostart": false,
-  "poll_delta": 20,
+  "poll_delta": 5000,
   "running": false,
   "logger": true,
   "receiveOnly": false,
   "request_config": {
    "source": 1,
-   "destination": 0,
+   "destination": 2,
    "destination_service": 2,
    "command_id": 8,
    "command_arg": 0
@@ -412,7 +412,7 @@
  {
   "task_name": "pdu0_telemetry",
   "autostart": false,
-  "poll_delta": 250,
+  "poll_delta": 10,
   "running": false,
   "logger": true,
   "receiveOnly": false,
@@ -445,7 +445,7 @@
       "description": "STATE_READY"
      },
      {
-      "id": 1,
+      "id": 2,
       "description": "STATE_LIVE"
      }
     ]

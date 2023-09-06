@@ -1,10 +1,18 @@
 import asyncio
 import socketio
 import websockets
+from websockets import exceptions as ws_exceptions
 import time
 import argparse
 import signal
 import sys
+
+
+# import logging
+# logger = logging.getLogger('websockets')
+# logger.setLevel(logging.DEBUG)
+# logger.addHandler(logging.StreamHandler())
+
 
 MS_TO_NS = 1e6
 NS_TO_MS = 1e-6
@@ -21,7 +29,8 @@ class WebsocketForwarder():
         self.eventLoop = None
 
         self.sio_url = "http://"+sio_host+":"+str(sio_port)+"/"
-        self.start_ws_server = websockets.serve(self.send_to_websocket, ws_host, ws_port,ping_timeout = None)
+        # self.start_ws_server = websockets.serve(self.send_to_websocket, ws_host, ws_port,ping_timeout = None)
+        self.start_ws_server = websockets.serve(self.send_to_websocket, ws_host, ws_port,ping_interval=None,ping_timeout=None)
         #register socketio client callbacks
         self.sio.on('connect',self.connect)
         self.sio.on('connect_error',self.connect_error)
@@ -72,7 +81,13 @@ class WebsocketForwarder():
             data = await data_queue.get()
             # async with asyncio.timeout(timeout=1):
                 # await websocket.send(f"{{\"timestamp\": {time.time_ns()*NS_TO_MS}, \"data\": {data}}}") #Todo make this not horrible -> maybe timestap should be set on the dtrh rather than here
+            # print(len(data))
             await websocket.send(f"{{\"timestamp\": {time.time_ns()*NS_TO_MS}, \"data\": {data}}}") #Todo make this not horrible -> maybe timestap should be set on the dtrh rather than here
+            # try:
+                
+            # except ws_exceptions.ConnectionClosedError as e:
+            #     print('[WebsocketForwarder] : caught closed - ' + str(e))
+            #     break
             await asyncio.sleep(0.01)
 
     async def main(self):

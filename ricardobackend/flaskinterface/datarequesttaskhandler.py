@@ -254,21 +254,19 @@ class DataRequestTaskHandler():
         #use simplejson to dump json as string so that NaNs are converted to null
         self.sio.emit(task_id,simplejson.dumps(decodedData,ignore_nan=True),namespace='/telemetry')
         #publish to redis depreceated
-        # #publish to redis -> note the prefix "telemetry:" which is being used to namepsace the key 
-        # #to replicate how the data is served in socketio 
-        # self.r.set("telemetry:"+task_id,json.dumps(decodedData))
 
 
         
     def __sendPacketFunction__(self,packet,task_id):
-        #construct identifier
-        identifier = self.identifier
-        identifier['task_id'] = task_id
-        send_data = {
+        #construct send data using deepcopy to prevent reference to self.identifier
+
+        send_data = copy.deepcopy({
             "data":packet.serialize().hex(),
-            "identifier":identifier
-        }
-        # self.r.lpush("SendQueue",json.dumps(send_data))
+            "identifier":self.identifier
+        })
+
+        send_data['identifier']['task_id'] = task_id
+
         try:
             self.sendQ.put_nowait(send_data)
         except Full:
@@ -280,11 +278,13 @@ class DataRequestTaskHandler():
             item = self.receiveQ.get_nowait()
             identifier = item['identifier']
             task_id = identifier['task_id']
+            print(task_id)
             if task_id in self.task_container.keys():
                 responseData:bytes = item['data']
                 self.publish_new_data(responseData,task_id)
             else:
                 #task id no longer active so dump received data
+                print('dumping')
                 pass
 
         except Empty:
