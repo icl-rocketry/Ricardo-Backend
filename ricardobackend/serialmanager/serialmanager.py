@@ -191,14 +191,10 @@ class SerialManager():
 	def __sendPacket__(self,data:bytes,identifier:dict):
 		header = RnpHeader.from_bytes(data)#decode header
 		uid = self.__generateUID__() #get uuid
-		print(uid)
 		header.uid = uid #get uuid
 		serialized_header = header.serialize() #re-serialize header
 		modifieddata = bytearray(data)
 		modifieddata[:len(serialized_header)] = serialized_header
-
-		print( "serialmanager - " + str(id(identifier)))
-
 		self.packetRecord[uid] = [identifier,time.time()] #update packetrecord dictionary
 		#self.sendBuffer.append(data)#add packet to send buffer
 		self.__sendToUDP__(modifieddata)  #send data to udp monitor
@@ -275,6 +271,6 @@ class SerialManager():
 					queue.put_nowait(json_message)
 				except Full:
 					print('[Serial-Manager]: receive Queue full, skipping message')
-					
+
 			return
 		

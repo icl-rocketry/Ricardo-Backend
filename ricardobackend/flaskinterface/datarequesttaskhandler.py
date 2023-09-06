@@ -243,7 +243,7 @@ class DataRequestTaskHandler():
                 if request_packet is not None:
                     self.__sendPacketFunction__(request_packet,task_id)
             self.__checkReceiveQueue__()
-            self.sio.sleep(0.001)
+            self.sio.sleep(0.005)
     
     def publish_new_data(self,data,task_id):
         task = self.task_container[task_id]
@@ -278,7 +278,6 @@ class DataRequestTaskHandler():
             item = self.receiveQ.get_nowait()
             identifier = item['identifier']
             task_id = identifier['task_id']
-            print(task_id)
             if task_id in self.task_container.keys():
                 responseData:bytes = item['data']
                 self.publish_new_data(responseData,task_id)
