@@ -94,7 +94,6 @@ class SerialManager():
 		self.ser.setDTR(True)
 		#print('esp32 reset')
 		self.ser.flushInput()
-		time.sleep(1)
 
 		#get boot messages after reboot
 		while (self.ser.in_waiting):
@@ -110,12 +109,18 @@ class SerialManager():
 		#cobs decode
 		while self.ser.in_waiting > 0:
 			incomming = self.ser.read(1)
+		
+			# try:
+			# 	print(incomming.decode('UTF-8'),end="")
+			# except:
+			# 	print(str(incomming),end="")
 			# if self.verbose:
-				## print(str(incomming))
-				# try:
-				# 	print(incomming.decode('UTF-8'))
-				# except:
-				# 	print(str(incomming))
+			# 	# print(str(incomming))
+			# 	try:
+			# 		print(incomming.decode('UTF-8'),end="")
+			# 	except:
+			# 		print(str(incomming),end="")
+
 			if (incomming == (0x00).to_bytes(1,'little')):
 				if (len(self.receiveBuffer) == 0):
 					#empty frame receved, discard this

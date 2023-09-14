@@ -16,6 +16,7 @@ import copy
 from datetime import datetime
 import multiprocessing as mp
 from queue import Full,Empty
+import os
 
 
 
@@ -37,9 +38,10 @@ class DataRequestTask():
         
         self.fileName = "Logs/"+self.config['task_name']+"_"+datetime.now().strftime("%d_%m_%y_%H_%M_%S_%f")+'.csv'
 
-
+        os.makedirs(os.path.dirname(self.fileName), exist_ok=True)
 
         self.logfile = open(self.fileName,'x')
+
         logfile_header = ["BackendTime"] + self.packet_class().packetvars
         self.csv_writer = csv.DictWriter(self.logfile,fieldnames=logfile_header)
         self.csv_writer.writeheader()
