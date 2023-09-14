@@ -177,8 +177,6 @@ class DataRequestTaskHandler():
         """Returns the current running tasks within the data request task handler as a json"""
         #concatenate all task configs into single dict and emit to all clients
         running_tasks = [task.config for task in self.task_container.values()]
-        if self.verbose:
-            print(running_tasks)
         self.sio.emit('runningTasks',running_tasks,namespace='/data_request_handler')
         
       

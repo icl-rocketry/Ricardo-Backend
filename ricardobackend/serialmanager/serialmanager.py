@@ -114,12 +114,12 @@ class SerialManager():
 			# 	print(incomming.decode('UTF-8'),end="")
 			# except:
 			# 	print(str(incomming),end="")
-			# if self.verbose:
-			# 	# print(str(incomming))
-			# 	try:
-			# 		print(incomming.decode('UTF-8'),end="")
-			# 	except:
-			# 		print(str(incomming),end="")
+			if self.verbose:
+				# print(str(incomming))
+				try:
+					print(incomming.decode('UTF-8'),end="")
+				except:
+					print(str(incomming),end="")
 
 			if (incomming == (0x00).to_bytes(1,'little')):
 				if (len(self.receiveBuffer) == 0):
