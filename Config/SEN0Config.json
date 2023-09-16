@@ -1,7 +1,7 @@
 [
     {
     "task_name": "sen0_telemetry",
-    "autostart": false,
+    "autostart": true,
     "poll_delta": 20,
     "running": false,
     "logger": true,
