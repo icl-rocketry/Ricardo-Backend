@@ -2,8 +2,8 @@
  {
   "task_name": "fc_telemetry",
   "autostart": false,
-  "poll_delta": 1,
-  "running": false,
+  "poll_delta": 20,
+  "running": true,
   "logger": true,
   "receiveOnly": false,
   "request_config": {
@@ -205,10 +205,10 @@
     ]
    }
   ],
-  "rxCounter": 0,
-  "txCounter": 0,
+  "rxCounter": 1948,
+  "txCounter": 1949,
   "connected": true,
-  "lastReceivedPacket": ""
+  "lastReceivedPacket": "afab009c07020065020101000000000000000000000000000000000000000000000000000000000000000000000000492aa83fe6f4c0bfb46315c09b4b1c3f4dc8a4bee7611fbff622bdbe0000000000000000000000000000f0803f0000893d0000983c529422400319c8bd0319c83d00007abd0000008000007a3d0038c0be00d0d03e00888bbe8e0f9743ad1bc647daa00dc10615da000000000000000000000000000240040097b700000000000092ff00000000"
  },
  {
   "task_name": "pdu_voltage",

@@ -100,7 +100,7 @@ class DataRequestTask():
         #update connection state varaibles
         self.config['rxCounter'] += 1
         self.lastReceivedTime = time.time_ns()
-        self.config['lastReceivedPacket'] = data
+        self.config['lastReceivedPacket'] = data.hex()
         self.config['connected'] = True
 
         try:
@@ -202,7 +202,10 @@ class DataRequestTaskHandler():
             handler_config = {}
         else:
             handler_config = [task.config for task in self.task_container.values()]
+           
         with open(self.config_filename,'w',encoding='utf-8') as file:
+            # print(handler_config)
+            # print(type(handler_config))
             file.write(json.dumps(handler_config,indent=1))
     
     def load_handler_config(self):
