@@ -1,6 +1,6 @@
 [
     {
-    "task_name": "srv2_telemetry",
+    "task_name": "srv4_telemetry",
     "autostart": false,
     "poll_delta": 20,
     "running": false,
@@ -8,7 +8,7 @@
     "receiveOnly": false,
     "request_config": {
      "source": 1,
-     "destination": 9,
+     "destination": 100,
      "destination_service": 10,
      "command_id": 1,
      "command_arg": 0
