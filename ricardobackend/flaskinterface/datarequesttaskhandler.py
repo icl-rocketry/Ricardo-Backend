@@ -202,11 +202,19 @@ class DataRequestTaskHandler():
             handler_config = {}
         else:
             handler_config = [task.config for task in self.task_container.values()]
+
+        json_string=""
+         #only try to write if we dont get any errors while dumping the dict as a string
+        try:
+            json_string=json.dumps(handler_config,indent=1)
+        except Exception as e:
+            print("[Data Task Request Handler] - config save error: " + str(e))
+            return
            
         with open(self.config_filename,'w',encoding='utf-8') as file:
             # print(handler_config)
             # print(type(handler_config))
-            file.write(json.dumps(handler_config,indent=1))
+            file.write(json_string)
     
     def load_handler_config(self):
         try:
