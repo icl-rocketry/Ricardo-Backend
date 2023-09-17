@@ -1,6 +1,6 @@
 [
     {
-    "task_name": "srv4_telemetry",
+    "task_name": "srv5_telemetry",
     "autostart": false,
     "poll_delta": 20,
     "running": false,

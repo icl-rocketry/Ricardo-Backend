@@ -213,13 +213,13 @@
  {
   "task_name": "pdu_voltage",
   "autostart": false,
-  "poll_delta": 20,
+  "poll_delta": 1000,
   "running": false,
   "logger": true,
   "receiveOnly": false,
   "request_config": {
    "source": 1,
-   "destination": 0,
+   "destination": 5,
    "destination_service": 2,
    "command_id": 4,
    "command_arg": 0
@@ -304,7 +304,43 @@
  {
   "task_name": "act0_telemetry",
   "autostart": false,
-  "poll_delta": 250,
+  "poll_delta": 500,
+  "running": false,
+  "logger": true,
+  "receiveOnly": false,
+  "request_config": {
+   "source": 1,
+   "destination": 12,
+   "destination_service": 2,
+   "command_id": 69,
+   "command_arg": 0
+  },
+  "packet_descriptor": {
+   "servoVoltage": "float",
+   "system_status": "uint32_t",
+   "system_time": "uint64_t"
+  },
+  "bitfield_decoders": [
+   {
+    "variable_name": "state",
+    "bitfield": "system_status",
+    "flags": [
+     {
+      "id": 0,
+      "description": "STATE_IDLE"
+     }
+    ]
+   }
+  ],
+  "rxCounter": 0,
+  "txCounter": 0,
+  "connected": true,
+  "lastReceivedPacket": ""
+ },
+ {
+  "task_name": "act1_telemetry",
+  "autostart": false,
+  "poll_delta": 500,
   "running": false,
   "logger": true,
   "receiveOnly": false,
@@ -338,45 +374,9 @@
   "lastReceivedPacket": ""
  },
  {
-  "task_name": "act1_telemetry",
-  "autostart": false,
-  "poll_delta": 250,
-  "running": false,
-  "logger": true,
-  "receiveOnly": false,
-  "request_config": {
-   "source": 1,
-   "destination": 8,
-   "destination_service": 2,
-   "command_id": 69,
-   "command_arg": 0
-  },
-  "packet_descriptor": {
-   "servoVoltage": "float",
-   "system_status": "uint32_t",
-   "system_time": "uint64_t"
-  },
-  "bitfield_decoders": [
-   {
-    "variable_name": "state",
-    "bitfield": "system_status",
-    "flags": [
-     {
-      "id": 0,
-      "description": "STATE_IDLE"
-     }
-    ]
-   }
-  ],
-  "rxCounter": 0,
-  "txCounter": 0,
-  "connected": true,
-  "lastReceivedPacket": ""
- },
- {
   "task_name": "act2_telemetry",
   "autostart": false,
-  "poll_delta": 250,
+  "poll_delta": 500,
   "running": false,
   "logger": true,
   "receiveOnly": false,
@@ -410,9 +410,45 @@
   "lastReceivedPacket": ""
  },
  {
+    "task_name": "act3_telemetry",
+    "autostart": false,
+    "poll_delta": 500,
+    "running": false,
+    "logger": true,
+    "receiveOnly": false,
+    "request_config": {
+     "source": 1,
+     "destination": 100,
+     "destination_service": 2,
+     "command_id": 69,
+     "command_arg": 0
+    },
+    "packet_descriptor": {
+     "servoVoltage": "float",
+     "system_status": "uint32_t",
+     "system_time": "uint64_t"
+    },
+    "bitfield_decoders": [
+    {
+        "variable_name": "state",
+        "bitfield": "system_status",
+        "flags": [
+        {
+            "id": 0,
+            "description": "STATE_IDLE"
+        }
+    ]
+    }
+    ],
+    "rxCounter": 0,
+    "txCounter": 0,
+    "connected": true,
+    "lastReceivedPacket": ""
+ },
+ {
   "task_name": "pdu0_telemetry",
   "autostart": false,
-  "poll_delta": 10,
+  "poll_delta": 1000,
   "running": false,
   "logger": true,
   "receiveOnly": false,
@@ -459,13 +495,13 @@
  {
   "task_name": "pdu1_telemetry",
   "autostart": false,
-  "poll_delta": 250,
+  "poll_delta": 1000,
   "running": false,
   "logger": true,
   "receiveOnly": false,
   "request_config": {
    "source": 1,
-   "destination": 4,
+   "destination": 6,
    "destination_service": 2,
    "command_id": 4,
    "command_arg": 0
@@ -689,7 +725,7 @@
   "receiveOnly": false,
   "request_config": {
    "source": 1,
-   "destination": 10,
+   "destination": 8,
    "destination_service": 2,
    "command_id": 8,
    "command_arg": 0
@@ -740,7 +776,7 @@
   "receiveOnly": false,
   "request_config": {
    "source": 1,
-   "destination": 6,
+   "destination": 10,
    "destination_service": 2,
    "command_id": 8,
    "command_arg": 0
@@ -783,15 +819,66 @@
   "lastReceivedPacket": ""
  },
  {
+    "task_name": "sen2_telemetry",
+    "autostart": false,
+    "poll_delta": 250,
+    "running": false,
+    "logger": true,
+    "receiveOnly": false,
+    "request_config": {
+    "source": 1,
+    "destination": 101,
+    "destination_service": 2,
+    "command_id": 8,
+    "command_arg": 0
+    },
+    "packet_descriptor": {
+    "ch0sens": "float",
+    "ch1sens": "float",
+    "ch2sens": "float",
+    "ch3sens": "float",
+    "ch4sens": "float",
+    "ch5sens": "float",
+    "ch6sens": "float",
+    "ch7sens": "float",
+    "ch8sens": "float",
+    "ch9sens": "float",
+    "ch10sens": "float",
+    "ch11sens": "float",
+    "temp0": "float",
+    "temp1": "float",
+    "temp2": "float",
+    "temp3": "float",
+    "system_status": "uint32_t",
+    "system_time": "uint64_t"
+    },
+    "bitfield_decoders": [
+    {
+        "variable_name": "state",
+        "bitfield": "system_status",
+        "flags": [
+        {
+            "id": 0,
+            "description": "STATE_IDLE"
+        }
+    ]
+    }
+    ],
+"rxCounter": 0,
+"txCounter": 0,
+"connected": true,
+"lastReceivedPacket": ""
+ },
+ {
   "task_name": "srv2_telemetry",
   "autostart": false,
-  "poll_delta": 250,
+  "poll_delta": 500,
   "running": false,
   "logger": true,
   "receiveOnly": false,
   "request_config": {
    "source": 1,
-   "destination": 8,
+   "destination": 9,
    "destination_service": 10,
    "command_id": 1,
    "command_arg": 0
@@ -844,7 +931,7 @@
  {
   "task_name": "srv3_telemetry",
   "autostart": false,
-  "poll_delta": 250,
+  "poll_delta": 500,
   "running": false,
   "logger": true,
   "receiveOnly": false,
@@ -903,7 +990,7 @@
  {
   "task_name": "srv4_telemetry",
   "autostart": false,
-  "poll_delta": 250,
+  "poll_delta": 500,
   "running": false,
   "logger": true,
   "receiveOnly": false,
@@ -960,6 +1047,124 @@
   "lastReceivedPacket": ""
  },
  {
+    "task_name": "srv5_telemetry",
+    "autostart": false,
+    "poll_delta": 500,
+    "running": false,
+    "logger": true,
+    "receiveOnly": false,
+    "request_config": {
+     "source": 1,
+     "destination": 100,
+     "destination_service": 10,
+     "command_id": 1,
+     "command_arg": 0
+    },
+    "packet_descriptor": {
+     "state": "uint16_t",
+     "value": "int32_t"
+    },
+    "bitfield_decoders": [
+    {
+        "variable_name": "state",
+        "bitfield": "component_status",
+        "flags": [
+        {
+            "id": 0,
+            "description": "NOMINAL"
+        },
+        {
+            "id": 1,
+            "description": "DISARMED"
+        },
+        {
+            "id": 2,
+            "description": "ERROR_NORESPONSE"
+        },
+        {
+            "id": 3,
+            "description": "ERROR_CONTINUITY"
+        },
+        {
+            "id": 4,
+            "description": "ERROR_PINS"
+        },
+        {
+            "id": 5,
+            "description": "ERROR_I2C"
+        },
+        {
+            "id": 6,
+            "description": "ERROR"
+        }
+    ]
+    }
+    ],
+    "rxCounter": 0,
+    "txCounter": 0,
+    "connected": true,
+    "lastReceivedPacket": ""
+ },
+ {
+    "task_name": "srv6_telemetry",
+    "autostart": false,
+    "poll_delta": 500,
+    "running": false,
+    "logger": true,
+    "receiveOnly": false,
+    "request_config": {
+     "source": 1,
+     "destination": 100,
+     "destination_service": 11,
+     "command_id": 1,
+     "command_arg": 0
+    },
+    "packet_descriptor": {
+     "state": "uint16_t",
+     "value": "int32_t"
+    },
+    "bitfield_decoders": [
+    {
+        "variable_name": "state",
+        "bitfield": "component_status",
+        "flags": [
+        {
+            "id": 0,
+            "description": "NOMINAL"
+        },
+        {
+            "id": 1,
+            "description": "DISARMED"
+        },
+        {
+            "id": 2,
+            "description": "ERROR_NORESPONSE"
+        },
+        {
+            "id": 3,
+            "description": "ERROR_CONTINUITY"
+        },
+        {
+            "id": 4,
+            "description": "ERROR_PINS"
+        },
+        {
+            "id": 5,
+            "description": "ERROR_I2C"
+        },
+        {
+            "id": 6,
+            "description": "ERROR"
+        }
+    ]
+    }
+    ],
+    "rxCounter": 0,
+    "txCounter": 0,
+    "connected": true,
+    "lastReceivedPacket": ""
+ },
+ {
   "task_name": "thanos_telemetry",
   "autostart": false,
   "poll_delta": 250,
@@ -968,7 +1173,7 @@
   "receiveOnly": false,
   "request_config": {
    "source": 1,
-   "destination": 9,
+   "destination": 12,
    "destination_service": 10,
    "command_id": 1,
    "command_arg": 0

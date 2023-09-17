@@ -2,7 +2,7 @@
     {
     "task_name": "pdu1_telemetry",
     "autostart": false,
-    "poll_delta": 20,
+    "poll_delta": 1000,
     "running": false,
     "logger": true,
     "receiveOnly": false,

@@ -2,7 +2,7 @@
     {
     "task_name": "srv3_telemetry",
     "autostart": false,
-    "poll_delta": 20,
+    "poll_delta": 500,
     "running": false,
     "logger": true,
     "receiveOnly": false,
