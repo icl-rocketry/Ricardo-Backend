@@ -7,7 +7,7 @@ services:
     container_name: ricardo-backend
     user: "${UID}:${GID}"
     environment:
-      - RICARDO_BACKEND_DEVICE=/dev/ricardo_device
+      - RICARDO_BACKEND_DEVICE=${SERIAL_PATH}
     ports:
       - 1337:1337
       - 1338:1338
@@ -15,7 +15,7 @@ services:
       - ./Config/:/ricardo-backend/Config/
       - ./volumes/ricardo-backend/logs/:/ricardo-backend/Logs/
     devices:
-      - /dev/ttyACM0:/dev/ricardo_device
+      - ${SERIAL_PATH}:${SERIAL_PATH}
     restart: always
 
   grafana:
