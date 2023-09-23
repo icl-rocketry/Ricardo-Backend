@@ -8,11 +8,11 @@ import signal
 import sys
 
 
-# import logging
-# logger = logging.getLogger('websockets')
-# logger.setLevel(logging.DEBUG)
-# logger.addHandler(logging.StreamHandler())
-
+import logging
+logger = logging.getLogger('websockets')
+logger.setLevel(logging.DEBUG)
+logger.addHandler(logging.StreamHandler())
+logging.getLogger("asyncio").setLevel(logging.DEBUG)
 
 MS_TO_NS = 1e6
 NS_TO_MS = 1e-6
@@ -30,7 +30,7 @@ class WebsocketForwarder():
 
         self.sio_url = "http://"+sio_host+":"+str(sio_port)+"/"
         # self.start_ws_server = websockets.serve(self.send_to_websocket, ws_host, ws_port,ping_timeout = None)
-        self.start_ws_server = websockets.serve(self.send_to_websocket, ws_host, ws_port,ping_interval=None,ping_timeout=None)
+        self.start_ws_server = websockets.serve(self.send_to_websocket, ws_host, ws_port)
         #register socketio client callbacks
         self.sio.on('connect',self.connect)
         self.sio.on('connect_error',self.connect_error)

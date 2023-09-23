@@ -50,7 +50,7 @@ app.register_blueprint(taskhandler_webui_bp, url_prefix="/taskhandler_ui")
 app.config["SECRET_KEY"] = "secret!"
 app.config['DEBUG'] = False
 # socketio app
-socketio = SocketIO(app,cors_allowed_origins="*",async_mode='eventlet',logger=True)
+socketio = SocketIO(app,cors_allowed_origins="*",async_mode='eventlet',logger=False)
 socketio_clients = []
 #flask rest api variables
 rest_response_queue_maxsize = 10
