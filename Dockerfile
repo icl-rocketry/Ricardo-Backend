@@ -32,7 +32,13 @@ COPY ./requirements.txt ./requirements.txt
 RUN pip3 install -r ./requirements.txt
 
 # Copy backend files
-COPY . .
+COPY ./.git ./.git
+COPY ./.gitmodules ./.gitmodules
+COPY ./external ./external
+COPY ./Logs ./Logs
+COPY ./ricardobackend ./ricardobackend
+COPY ./main.py ./main.py
+COPY ./RicardoBackend.sh ./RicardoBackend.sh
 
 # Initialise and update submodules
 RUN git submodule init && git submodule update
