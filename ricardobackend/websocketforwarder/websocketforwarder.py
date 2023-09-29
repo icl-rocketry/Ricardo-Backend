@@ -1,3 +1,6 @@
+import os
+os.environ['PYTHONASYNCIODEBUG'] = '1'
+
 import asyncio
 import socketio
 import websockets
@@ -9,10 +12,11 @@ import sys
 
 
 import logging
-logger = logging.getLogger('websockets')
-logger.setLevel(logging.DEBUG)
-logger.addHandler(logging.StreamHandler())
-logging.getLogger("asyncio").setLevel(logging.DEBUG)
+# logger = logging.getLogger('websockets')
+# logger.setLevel(logging.DEBUG)
+# logger.addHandler(logging.StreamHandler())
+# logging.getLogger("asyncio").setLevel(logging.INFO)
+# logging.getLogger("asyncio").addHandler(logging.StreamHandler())
 
 MS_TO_NS = 1e6
 NS_TO_MS = 1e-6
@@ -84,7 +88,7 @@ class WebsocketForwarder():
             # print(len(data))
             await websocket.send(f"{{\"timestamp\": {time.time_ns()*NS_TO_MS}, \"data\": {data}}}") #Todo make this not horrible -> maybe timestap should be set on the dtrh rather than here
             # try:
-                
+            # await websocket.recv()  
             # except ws_exceptions.ConnectionClosedError as e:
             #     print('[WebsocketForwarder] : caught closed - ' + str(e))
             #     break

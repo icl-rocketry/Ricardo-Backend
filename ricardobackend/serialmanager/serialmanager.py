@@ -1,6 +1,7 @@
 # from .packets import *
 from pylibrnp.rnppacket import DeserializationError, RnpHeader
 import serial
+from serial import SerialException
 import time
 from cobs import cobs
 import signal
@@ -66,19 +67,36 @@ class SerialManager():
 		
 	def run(self):
 		with socket.socket(socket.AF_INET,socket.SOCK_DGRAM) as self.sock:
-			self.__connect__() #connect to ricardo 
+			# self.__connect__() #connect to ricardo 
+			self.__auto_connect__()
 			
 			while True:
-				self.__checkSendQueue__()
-				self.__readPacket__()
-				self.__cleanupPacketRecord__()
+				try:
+					self.__checkSendQueue__()
+					self.__readPacket__()
+					self.__cleanupPacketRecord__()
+				except (OSError, serial.SerialException):
+					self.__auto_connect__()
+						
+
+					
 		
 	def exitHandler(self,sig,frame):
 		print("Serial Manager Exited")
 		self.ser.close() #close serial port
 		sys.exit(0)
 
-		
+	def __auto_connect__(self):
+		while True:
+			try:
+				self.__connect__()
+				print("Device " + self.device + " Connected")
+				break
+			except (OSError, serial.SerialException):
+				print('Device ' + self.device + ' Disconnected, retrying...')
+				time.sleep(1)
+				continue
+			
 	def __connect__(self):
 		boot_messages = ''
 		self.ser = serial.Serial(port=self.device, baudrate=self.baud, timeout = self.waittime)  # open serial port
