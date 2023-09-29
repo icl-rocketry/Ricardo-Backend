@@ -24,6 +24,7 @@ ap.add_argument('-monport','--monitor-port', required=False, help="Set network m
 ap.add_argument('--ws_host',required=False, help="websocket host", type=str,default = "0.0.0.0")
 ap.add_argument('--ws_port',required=False, help="websocket port", type=int,default = 1338)
 ap.add_argument('--fake_data',required=False, help="serve fake data",action='store_true',default=False)
+ap.add_argument('--no_autoreconnect',required=False, help="Disable serial autoreconnect",action='store_true',default=False)
 
 argsin = vars(ap.parse_args())
 
@@ -42,6 +43,7 @@ def startSerialManager(args,sendQueue,receiveQueue_dict):
 
     serman = serialmanager.SerialManager(device = args["device"],
                                      baud = args["baud"],
+                                     autoreconnect= not args['no_autoreconnect'],
                                      UDPMonitor=args['monitor'],
                                      UDPIp=args['monitor_ip'],
                                      UDPPort=args["monitor_port"],

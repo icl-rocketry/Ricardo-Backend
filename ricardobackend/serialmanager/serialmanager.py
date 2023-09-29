@@ -15,11 +15,12 @@ class SerialManager():
 	SimpleSend:int = 0
 	WaitForIncomming:int = 1
 
-	def __init__(self, device, baud=115200, waittime = .3,sendQ = None,receiveQ_dict = None,verbose=False,UDPMonitor=False,UDPIp='127.0.0.1',UDPPort=7000):
+	def __init__(self, device, baud=115200, autoreconnect=True, waittime = .3,sendQ = None,receiveQ_dict = None,verbose=False,UDPMonitor=False,UDPIp='127.0.0.1',UDPPort=7000):
 		signal.signal(signal.SIGINT,self.exitHandler)
 		signal.signal(signal.SIGTERM,self.exitHandler)
 		self.device = device
 		self.baud = baud
+		self.autoreconnect = autoreconnect
 		self.waittime = waittime
 		
 		self.sendMode = SerialManager.SimpleSend
@@ -83,7 +84,10 @@ class SerialManager():
 		
 	def exitHandler(self,sig,frame):
 		print("Serial Manager Exited")
-		self.ser.close() #close serial port
+		try:
+			self.ser.close() #close serial port
+		except AttributeError:
+			pass
 		sys.exit(0)
 
 	def __auto_connect__(self):
@@ -93,9 +97,13 @@ class SerialManager():
 				print("Device " + self.device + " Connected")
 				break
 			except (OSError, serial.SerialException):
-				print('Device ' + self.device + ' Disconnected, retrying...')
-				time.sleep(1)
-				continue
+				if self.autoreconnect:
+					print('Device ' + self.device + ' Disconnected, retrying...')
+					time.sleep(1)
+					continue
+				else:
+					print('Device ' + self.device + ' Disconnected, killing serial manager. Bye bye!')
+					self.exitHandler(None,None)
 			
 	def __connect__(self):
 		boot_messages = ''
