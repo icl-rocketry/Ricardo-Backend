@@ -48,7 +48,7 @@ class SerialManager():
 		# self.redisport= redisport
 
 		if sendQ is None or receiveQ_dict is None:
-			raise Exception('[Serial-Manager]: Error, no sendqueue or receivequeue passed, exiting')
+			raise Exception('[Serial-Manager] - Error, no sendqueue or receivequeue passed, exiting')
 
 		self.sendQ:mp.Queue = sendQ
 		self.receiveQ_dict:dict = receiveQ_dict #{"prefix1":mp.Queue,"prefix2":mp.Queue}...
@@ -82,7 +82,7 @@ class SerialManager():
 					
 		
 	def exitHandler(self,sig,frame):
-		print("Serial Manager Exited")
+		self.__sm_log__("Serial Manager Exited")
 		try:
 			self.ser.close() #close serial port
 		except AttributeError:
@@ -93,15 +93,15 @@ class SerialManager():
 		while True:
 			try:
 				self.__connect__()
-				print("Device " + self.device + " Connected")
+				self.__sm_log__("Device " + self.device + " Connected")
 				break
 			except (OSError, serial.SerialException):
 				if self.autoreconnect:
-					print('Device ' + self.device + ' Disconnected, retrying...')
+					self.__sm_log__('Device ' + self.device + ' Disconnected, retrying...')
 					time.sleep(1)
 					continue
 				else:
-					print('Device ' + self.device + ' Disconnected, killing serial manager. Bye bye!')
+					self.__sm_log__('Device ' + self.device + ' Disconnected, killing serial manager. Bye bye!')
 					self.exitHandler(None,None)
 			
 	def __connect__(self):
@@ -112,12 +112,12 @@ class SerialManager():
 		self.ser.parity = serial.PARITY_NONE
 		self.ser.bytesize = serial.EIGHTBITS
 
-		#print('call reset on esp32')
+		#self.__sm_log__('call reset on esp32')
 		self.ser.setDTR(False)
 		time.sleep(1)
 		self.ser.flushInput()
 		self.ser.setDTR(True)
-		#print('esp32 reset')
+		#self.__sm_log__('esp32 reset')
 		self.ser.flushInput()
 
 		#get boot messages after reboot
@@ -128,7 +128,7 @@ class SerialManager():
 			except:
 				boot_messages += str(data)
 		# if self.verbose:
-		print(boot_messages)
+		self.__sm_log__(boot_messages)
 
 	def __readPacket__(self):
 		#cobs decode
@@ -140,7 +140,7 @@ class SerialManager():
 			# except:
 			# 	print(str(incomming),end="")
 			if self.verbose:
-				# print(str(incomming))
+				# self.__sm_log__(str(incomming))
 				try:
 					print(incomming.decode('UTF-8'),end="")
 				except:
@@ -154,9 +154,9 @@ class SerialManager():
 					decodedData = cobs.decode(bytearray(self.receiveBuffer))
 					self.__processReceivedPacket__(decodedData)
 					self.__sendToUDP__(decodedData) 
-					# print(decodedData)
+					# self.__sm_log__(decodedData)
 				except cobs.DecodeError as e:
-					print("Decoded Error, the following data could not be decoded...")
+					self.__sm_log__("Decoded Error, the following data could not be decoded...")
 					print(e)
 					print(self.receiveBuffer)
 					
@@ -172,14 +172,14 @@ class SerialManager():
 		try:
 			header = RnpHeader.from_bytes(data)#decode header
 		except DeserializationError:
-			print("Deserialization Error")
-			print(data)
+			self.__sm_log__("Deserialization Error")
+			self.__sm_log__(data)
 			return
 		#check header len
 		
 		if (len(data) != (RnpHeader.size + header.packet_len)):
-			print("Length Mismatch expected:" + str((RnpHeader.size + header.packet_len)) + " Received: " + str(len(data)))
-			print(data.hex())
+			self.__sm_log__("Length Mismatch expected:" + str((RnpHeader.size + header.packet_len)) + " Received: " + str(len(data)))
+			self.__sm_log__(data.hex())
 			return
 
 		uid = header.uid #get unique id
@@ -191,14 +191,14 @@ class SerialManager():
 			try:
 				queue:mp.Queue = self.receiveQ_dict[identifier['prefix']]
 			except KeyError:
-				print('[Serial-Manager]: Invalid key: ' + identifier['prefix'] + 'dumping packet!')
+				self.__sm_log__('Invalid key: ' + identifier['prefix'] + 'dumping packet!')
 				return
 
 			try:
 				sendData = {'identifier':identifier,'type':'response','data':data}
 				queue.put_nowait(sendData)
 			except Full:
-				print('[Serial-Manager]: receive queue full, dumping packet!')
+				self.__sm_log__('receive queue full, dumping packet!')
 				return
 
 
@@ -210,8 +210,8 @@ class SerialManager():
 				return
 
 			#unkown packet received -> dump packet ; might be worth spewing these into a file
-			print("[ERROR-BACKEND] unkown packet recieved")
-			print(header)
+			self.__sm_log__("unkown packet recieved")
+			self.__sm_log__(header)
 			return
 
 			
@@ -242,12 +242,15 @@ class SerialManager():
 				self.__processSendQueue__()
 				self.received_packet = False
 			elif (time.time_ns() - self.prevSendTime > self.sentWaitTimeout):
-				# print("receive timeout, sending new packet")
+				# self.__sm_log__("receive timeout, sending new packet")
 				self.__processSendQueue__()
 		elif (self.sendMode == SerialManager.SimpleSend):
 			if (time.time_ns()-self.prevSendTime > self.sendDelta):
 				self.__processSendQueue__()
-		
+
+	def __sm_log__(self,msg):
+		#serial maanger logger, will replace with something better than self.__sm_log__ in the future - famous last words
+		print('[Serial Manager] - ' + msg)	
 			
 	
 	def __processSendQueue__(self):
@@ -291,7 +294,7 @@ class SerialManager():
 			except:
 				message:str = str(packet_body)
 			if self.verbose:
-				print("Message: " + message)
+				self.__sm_log__("Message: " + message)
 			json_message = {"header" : vars(header),
 							"message": message}
 			#broadcast message to all receive queues
@@ -300,7 +303,7 @@ class SerialManager():
 					json_message['type'] = "logmessage"
 					queue.put_nowait(json_message)
 				except Full:
-					print('[Serial-Manager]: receive Queue full, skipping message')
+					self.__sm_log__('receive Queue full, skipping message')
 
 			return
 		
