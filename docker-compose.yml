@@ -7,14 +7,15 @@ services:
     container_name: ricardo-backend
     user: "${UID}:${GID}"
     environment:
-      - RICARDO_BACKEND_DEVICE=/dev/ricardo_device
-      - RICARDO_BACKEND_FAKE_DATA=TRUE
+      - RICARDO_BACKEND_DEVICE=${SERIAL_PATH}
     ports:
       - 1337:1337
+      - 1338:1338
     volumes:
-      - ./volumes/ricardo-backend/logs/:/Logs/
-    networks:
-      - backend
+      - ./Config/:/ricardo-backend/Config/
+      - ./volumes/ricardo-backend/logs/:/ricardo-backend/Logs/
+    devices:
+      - ${SERIAL_PATH}:${SERIAL_PATH}
     restart: always
 
   grafana:
@@ -28,10 +29,17 @@ services:
     volumes:
       - ./volumes/grafana/grafana.db:/var/lib/grafana/grafana.db
       - ./volumes/grafana/plugins/:/var/lib/grafana/plugins/
-    networks:
-      - backend
     restart: always
 
-networks:
-  backend:
-    external: false
+  caddy:
+    image: caddy
+    container_name: caddy
+    user: "${UID}:${GID}"
+    environment:
+      - RICARDO_BACKEND_DOMAIN=${RICARDO_BACKEND_DOMAIN}
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./volumes/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+    restart: always
