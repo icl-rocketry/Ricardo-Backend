@@ -78,7 +78,6 @@ class SerialManager():
 					self.__cleanupPacketRecord__()
 				except (OSError, serial.SerialException):
 					self.__auto_connect__()
-						
 
 					
 		

@@ -35,7 +35,9 @@ def exitBackend(sig,frame):
     for key in proclist:
         print("Killing: " + key + " Pid: " + str(proclist[key].pid))
         proclist[key].terminate()
+        proclist[key].kill()
         proclist[key].join()
+        proclist[key].close()
 
     sys.exit(0)
 
