@@ -33,6 +33,8 @@ class WebsocketForwarder():
         self.eventLoop = None
 
         self.sio_url = "http://"+sio_host+":"+str(sio_port)+"/"
+        self.ws_host = ws_host
+        self.ws_port = ws_port
         # self.start_ws_server = websockets.serve(self.send_to_websocket, ws_host, ws_port,ping_timeout = None)
         self.start_ws_server = websockets.serve(self.send_to_websocket, ws_host, ws_port)
         #register socketio client callbacks
@@ -42,7 +44,10 @@ class WebsocketForwarder():
         self.sio.on('*',self.forward_telemetry,namespace='/telemetry')
 
        
-        
+    # async def start_ws_server(self):
+    #     server = await websockets.serve(self.send_to_websocket, self.ws_host, self.ws_port)
+    #     await server.wait_closed()
+
 
 
     async def connect(self):
@@ -88,15 +93,17 @@ class WebsocketForwarder():
             # print(len(data))
             await websocket.send(f"{{\"timestamp\": {time.time_ns()*NS_TO_MS}, \"data\": {data}}}") #Todo make this not horrible -> maybe timestap should be set on the dtrh rather than here
             # try:
-            # await websocket.recv()  
+            # # await websocket.recv()  
+            #     await websocket.send(f"{{\"timestamp\": {time.time_ns()*NS_TO_MS}, \"data\": {data}}}")
             # except ws_exceptions.ConnectionClosedError as e:
-            #     print('[WebsocketForwarder] : caught closed - ' + str(e))
+            #     pass
+            # #     print('[WebsocketForwarder] : caught closed - ' + str(e))
             #     break
             await asyncio.sleep(0.01)
 
     async def main(self):
         
-        while self.run:
+        while True:
             try:
                 await self.sio.connect(self.sio_url, namespaces=["/telemetry"]) 
                 break
@@ -111,6 +118,16 @@ class WebsocketForwarder():
         asyncio.get_event_loop().run_until_complete(self.start_ws_server)
         asyncio.get_event_loop().run_until_complete(self.main())
         self.eventLoop = asyncio.get_event_loop().run_forever()
+        # asyncio.run(self.start_ws_server)
+        # asyncio.run(self.main())
+        
+
+        
+        # asyncio.run( awaitasyncio.gather(self.start_ws_server(),self.main()))
+        # with asyncio.Runner() as runner:
+        #     runner.run(self.main())
+        #     runner.run(self.start_ws_server())
+
 
     def exitHandler(self):
         if self.eventLoop is not None:

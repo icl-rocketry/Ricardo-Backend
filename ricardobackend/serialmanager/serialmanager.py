@@ -173,7 +173,7 @@ class SerialManager():
 			header = RnpHeader.from_bytes(data)#decode header
 		except DeserializationError:
 			self.__sm_log__("Deserialization Error")
-			self.__sm_log__(data)
+			self.__sm_log__(str(data))
 			return
 		#check header len
 		
@@ -211,7 +211,7 @@ class SerialManager():
 
 			#unkown packet received -> dump packet ; might be worth spewing these into a file
 			self.__sm_log__("unkown packet recieved")
-			self.__sm_log__(header)
+			print(header)
 			return
 
 			
@@ -250,7 +250,7 @@ class SerialManager():
 
 	def __sm_log__(self,msg):
 		#serial maanger logger, will replace with something better than self.__sm_log__ in the future - famous last words
-		print('[Serial Manager] - ' + msg)	
+		print('[Serial Manager] - ' + str(msg))	
 			
 	
 	def __processSendQueue__(self):
