@@ -1,14 +1,14 @@
 [
     {
-    "task_name": "srv3_telemetry",
+    "task_name": "canards_telemetry",
     "autostart": false,
-    "poll_delta": 500,
+    "poll_delta": 20,
     "running": false,
     "logger": true,
     "receiveOnly": false,
     "request_config": {
      "source": 1,
-     "destination": 7,
+     "destination": 15,
      "destination_service": 10,
      "command_id": 1,
      "command_arg": 0

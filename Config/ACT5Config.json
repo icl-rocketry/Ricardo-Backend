@@ -1,6 +1,6 @@
 [
     {
-    "task_name": "act3_telemetry",
+    "task_name": "act5_telemetry",
     "autostart": false,
     "poll_delta": 500,
     "running": false,
@@ -8,7 +8,7 @@
     "receiveOnly": false,
     "request_config": {
      "source": 1,
-     "destination": 13,
+     "destination": 100,
      "destination_service": 2,
      "command_id": 69,
      "command_arg": 0

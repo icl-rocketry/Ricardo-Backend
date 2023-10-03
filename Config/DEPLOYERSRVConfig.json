@@ -1,0 +1,60 @@
+[
+    {
+    "task_name": "deployersrv_telemetry",
+    "autostart": false,
+    "poll_delta": 20,
+    "running": false,
+    "logger": true,
+    "receiveOnly": false,
+    "request_config": {
+     "source": 1,
+     "destination": 13,
+     "destination_service": 10,
+     "command_id": 1,
+     "command_arg": 0
+    },
+    "packet_descriptor": {
+     "state": "uint16_t",
+     "value": "int32_t"
+    },
+    "bitfield_decoders": [
+    {
+        "variable_name": "state",
+        "bitfield": "component_status",
+        "flags": [
+        {
+            "id": 0,
+            "description": "NOMINAL"
+        },
+        {
+            "id": 1,
+            "description": "DISARMED"
+        },
+        {
+            "id": 2,
+            "description": "ERROR_NORESPONSE"
+        },
+        {
+            "id": 3,
+            "description": "ERROR_CONTINUITY"
+        },
+        {
+            "id": 4,
+            "description": "ERROR_PINS"
+        },
+        {
+            "id": 5,
+            "description": "ERROR_I2C"
+        },
+        {
+            "id": 6,
+            "description": "ERROR"
+        }
+    ]
+    }
+    ],
+    "rxCounter": 0,
+    "txCounter": 0,
+    "connected": true,
+    "lastReceivedPacket": ""
+}]

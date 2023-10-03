@@ -1,15 +1,15 @@
 [
     {
-    "task_name": "srv5_telemetry",
+    "task_name": "oxhoseventsrv_telemetry",
     "autostart": false,
-    "poll_delta": 20,
+    "poll_delta": 500,
     "running": false,
     "logger": true,
     "receiveOnly": false,
     "request_config": {
      "source": 1,
      "destination": 100,
-     "destination_service": 10,
+     "destination_service": 11,
      "command_id": 1,
      "command_arg": 0
     },
