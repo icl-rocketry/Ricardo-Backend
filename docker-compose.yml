@@ -4,6 +4,8 @@ services:
 
   ricardo-backend:
     image: ricardo-backend
+    build:
+      context: .
     container_name: ricardo-backend
     user: "${UID}:${GID}"
     environment:
@@ -19,16 +21,17 @@ services:
     restart: always
 
   grafana:
-    image: grafana/grafana-oss
+    image: grafana-iclr
+    build:
+      context: ./external/grafana
+      args:
+        - GF_INSTALL_PLUGINS=golioth-websocket-datasource,agenty-flowcharting-panel,speakyourcode-button-panel,grafana-clock-panel,yesoreyeram-infinity-datasource
     container_name: grafana
     user: "${UID}:${GID}"
-    environment:
-      - GF_INSTALL_PLUGINS=golioth-websocket-datasource,agenty-flowcharting-panel
     ports:
       - 3000:3000
     volumes:
       - ./volumes/grafana/grafana.db:/var/lib/grafana/grafana.db
-      - ./volumes/grafana/plugins/:/var/lib/grafana/plugins/
     restart: always
 
   caddy:
