@@ -2,13 +2,13 @@
 ARG BASEIMAGE="debian-slim"
 
 ## Base image using Debian
-FROM python:latest as debian
+FROM python:3.10 as debian
 
 # Update/upgrade packages
 RUN apt-get update && apt-get upgrade -y
 
 ## Base image using slim Debian
-FROM python:slim as debian-slim
+FROM python:3.10-slim as debian-slim
 
 # Update/upgrade packages
 RUN apt-get update && apt-get upgrade -y
