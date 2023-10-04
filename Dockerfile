@@ -34,7 +34,7 @@ RUN pip3 install -r ./requirements.txt
 # Copy backend files
 COPY ./.git ./.git
 COPY ./.gitmodules ./.gitmodules
-COPY ./external ./external
+COPY ./external/pylibrnp ./external/pylibrnp
 COPY ./Logs ./Logs
 COPY ./ricardobackend ./ricardobackend
 COPY ./main.py ./main.py
