@@ -19,8 +19,8 @@
     },
     "bitfield_decoders": [
     {
-        "variable_name": "state",
-        "bitfield": "component_status",
+        "variable_name": "component_status",
+        "bitfield": "state",
         "flags": [
         {
             "id": 0,

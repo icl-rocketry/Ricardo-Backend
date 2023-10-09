@@ -8,7 +8,7 @@
     "receiveOnly": false,
     "request_config": {
      "source": 1,
-     "destination": 15,
+     "destination": 17,
      "destination_service": 10,
      "command_id": 1,
      "command_arg": 0
@@ -19,8 +19,8 @@
     },
     "bitfield_decoders": [
     {
-        "variable_name": "state",
-        "bitfield": "component_status",
+        "variable_name": "component_status",
+        "bitfield": "state",
         "flags": [
         {
             "id": 0,
