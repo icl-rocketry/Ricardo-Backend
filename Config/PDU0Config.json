@@ -15,9 +15,7 @@
     },
     "packet_descriptor": {
      "logicVoltage": "uint16_t",
-     "logicPerc": "uint16_t",
      "depVoltage": "uint16_t",
-     "depPercent": "uint16_t",
      "system_status": "uint32_t",
      "system_time": "uint64_t"
     },
@@ -35,7 +33,7 @@
             "description": "STATE_READY"
         },
         {
-            "id": 1,
+            "id": 2,
             "description": "STATE_LIVE"            
         }
     ]

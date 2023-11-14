@@ -2,19 +2,16 @@
 ARG BASEIMAGE="debian-slim"
 
 ## Base image using Debian
-FROM python:latest as debian
+FROM python:3.10 as debian
 
 # Update/upgrade packages
 RUN apt-get update && apt-get upgrade -y
 
 ## Base image using slim Debian
-FROM python:slim as debian-slim
+FROM python:3.10-slim as debian-slim
 
 # Update/upgrade packages
 RUN apt-get update && apt-get upgrade -y
-
-# Install git
-RUN apt-get install git -y
 
 ## Ricardo-Backend image
 FROM $BASEIMAGE
@@ -32,16 +29,11 @@ COPY ./requirements.txt ./requirements.txt
 RUN pip3 install -r ./requirements.txt
 
 # Copy backend files
-COPY ./.git ./.git
-COPY ./.gitmodules ./.gitmodules
-COPY ./external ./external
+COPY ./external/pylibrnp ./external/pylibrnp
 COPY ./Logs ./Logs
 COPY ./ricardobackend ./ricardobackend
 COPY ./main.py ./main.py
 COPY ./RicardoBackend.sh ./RicardoBackend.sh
-
-# Initialise and update submodules
-RUN git submodule init && git submodule update
 
 # Make the backend script executable
 RUN chmod +x ./RicardoBackend.sh

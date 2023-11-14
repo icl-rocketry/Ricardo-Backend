@@ -8,7 +8,7 @@
     "receiveOnly": false,
     "request_config": {
     "source": 1,
-    "destination": 101,
+    "destination": 52,
     "destination_service": 2,
     "command_id": 8,
     "command_arg": 0

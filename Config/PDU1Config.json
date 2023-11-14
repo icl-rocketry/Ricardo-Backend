@@ -8,16 +8,14 @@
     "receiveOnly": false,
     "request_config": {
      "source": 1,
-     "destination": 4,
+     "destination": 6,
      "destination_service": 2,
      "command_id": 4,
      "command_arg": 0
     },
     "packet_descriptor": {
      "logicVoltage": "uint16_t",
-     "logicPerc": "uint16_t",
      "depVoltage": "uint16_t",
-     "depPercent": "uint16_t",
      "system_status": "uint32_t",
      "system_time": "uint64_t"
     },
