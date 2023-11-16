@@ -12,8 +12,8 @@ from queue import Full, Empty
 
 
 class SerialManager():
-	SimpleSend:int = 0
-	WaitForIncomming:int = 1
+	# SimpleSend:int = 0
+	# WaitForIncomming:int = 1
 
 	def __init__(self, device, baud=115200, autoreconnect=True, waittime = .3,sendQ = None,receiveQ_dict = None,verbose=False,UDPMonitor=False,UDPIp='127.0.0.1',UDPPort=7000):
 		signal.signal(signal.SIGINT,self.exitHandler)
@@ -23,14 +23,14 @@ class SerialManager():
 		self.autoreconnect = autoreconnect
 		self.waittime = waittime
 		
-		self.sendMode = SerialManager.SimpleSend
+		# self.sendMode = SerialManager.SimpleSend
 		self.prevSendTime = 0
 
 		 
 		self.sendDelta = 1e4
 
-		self.sentWaitTimeout:int=1000e6
-		self.received_packet:bool=False
+		# self.sentWaitTimeout:int=1000e6
+		# self.received_packet:bool=False
 
 		self.verbose = verbose
 		
@@ -53,17 +53,13 @@ class SerialManager():
 		self.sendQ:mp.Queue = sendQ
 		self.receiveQ_dict:dict = receiveQ_dict #{"prefix1":mp.Queue,"prefix2":mp.Queue}...
 
-		#connect to redis 
-		# self.rd = redis.Redis(host = self.redishost,port = self.redisport)
-		#clear SendQueue
-		# self.rd.delete("SendQueue")
-
 		self.UDPMonitor = UDPMonitor
+		self.sock = None
 		#setup udp monitor
 		if (UDPMonitor):
 			self.UDPIp = UDPIp
 			self.UDPPort = UDPPort
-			self.sock = None
+			
 
 		
 	def run(self):
@@ -237,15 +233,17 @@ class SerialManager():
 	def __checkSendQueue__(self):
 		#check if there are items present in send queue
 		# if (time.time_ns() - self.prevSendTime) > self.sendDelta :
-		if (self.sendMode == SerialManager.WaitForIncomming):
-			if (self.received_packet):
-				self.__processSendQueue__()
-				self.received_packet = False
-			elif (time.time_ns() - self.prevSendTime > self.sentWaitTimeout):
-				# self.__sm_log__("receive timeout, sending new packet")
-				self.__processSendQueue__()
-		elif (self.sendMode == SerialManager.SimpleSend):
-			if (time.time_ns()-self.prevSendTime > self.sendDelta):
+		# if (self.sendMode == SerialManager.WaitForIncomming):
+		# 	if (self.received_packet):
+		# 		self.__processSendQueue__()
+		# 		self.received_packet = False
+		# 	elif (time.time_ns() - self.prevSendTime > self.sentWaitTimeout):
+		# 		# self.__sm_log__("receive timeout, sending new packet")
+		# 		self.__processSendQueue__()
+		# elif (self.sendMode == SerialManager.SimpleSend):
+		# 	if (time.time_ns()-self.prevSendTime > self.sendDelta):
+		# 		self.__processSendQueue__()
+		if (time.time_ns()-self.prevSendTime > self.sendDelta):
 				self.__processSendQueue__()
 
 	def __sm_log__(self,msg):

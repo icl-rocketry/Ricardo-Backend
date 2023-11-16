@@ -13,18 +13,24 @@ from ricardobackend.websocketforwarder import websocketforwarder
 
 # Argument Parsing
 ap = argparse.ArgumentParser()
+
 ap.add_argument("-d", "--device", required=False, help="Ricardo Serial Port", type=str)
 ap.add_argument("-b", "--baud", required=False, help="Serial Port Baud Rate", type=int,default=115200)
+ap.add_argument('--no_autoreconnect',required=False, help="Disable serial autoreconnect",action='store_true',default=False)
+
 ap.add_argument("--flask-host", required=False, help="flask host", type=str,default="0.0.0.0")
 ap.add_argument("--flask-port", required=False, help="flask Port", type=int,default = 1337)
-ap.add_argument("-v", "--verbose", required=False, help="Enable Verbose Mode", action='store_true')
+
+ap.add_argument('--ws_host',required=False, help="websocket host", type=str,default = "0.0.0.0")
+ap.add_argument('--ws_port',required=False, help="websocket port", type=int,default = 1338)
+
 ap.add_argument('-mon','--monitor', required=False, help="Enable network monitoring ",action='store_true',default=False)
 ap.add_argument('-monip','--monitor-ip', required=False, help="Set network monitoring ip",type=str,default = "127.0.0.1")
 ap.add_argument('-monport','--monitor-port', required=False, help="Set network monitoring port",type=int,default = 7000)
-ap.add_argument('--ws_host',required=False, help="websocket host", type=str,default = "0.0.0.0")
-ap.add_argument('--ws_port',required=False, help="websocket port", type=int,default = 1338)
+
+ap.add_argument("-v", "--verbose", required=False, help="Enable Verbose Mode", action='store_true')
 ap.add_argument('--fake_data',required=False, help="serve fake data",action='store_true',default=False)
-ap.add_argument('--no_autoreconnect',required=False, help="Disable serial autoreconnect",action='store_true',default=False)
+
 
 argsin = vars(ap.parse_args())
 
@@ -75,6 +81,7 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT,exitBackend)
     signal.signal(signal.SIGTERM,exitBackend)
 
+    
     sendQueue = multiprocessing.Queue()
     receiveQueue_dict = {"flaskinterface":multiprocessing.Queue()}
 
@@ -92,10 +99,7 @@ if __name__ == '__main__':
     proclist['websocketforwarder'] = multiprocessing.Process(target=startWebSocketForwarder,args=(argsin,))
     proclist['websocketforwarder'].start()
 
-    while(True):
-        pass
-
-
+    
 
 
 
