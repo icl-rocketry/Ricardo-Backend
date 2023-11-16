@@ -13,15 +13,6 @@ from .command_webui import command_webui_bp
 from .datarequesttaskhandler import DataRequestTaskHandler
 from .emitter import EmitterClass
 
-
-# if __name__ == "__main__":
-#     from telemetry_webui.telemetry_webui import telemetry_webui_bp
-#     from command_webui.command_webui import command_webui_bp
-#     # from datarequesttaskhandler import DataRequestTaskHandler
-# else:
-#     from .telemetry_webui.telemetry_webui import telemetry_webui_bp
-#     from .command_webui.command_webui import command_webui_bp
-#     from .datarequesttaskhandler import DataRequestTaskHandler
     
 # system packages
 import sys
@@ -72,18 +63,6 @@ dtrh_receiveQ:mp.Queue = mp.Queue()
 # prev_time = 0
 # updateTimePeriod = 0.01 #in seconds
 
-
-
-# FLASK APP 
-# new / route: return react site
-# @app.route('/', defaults={'path': ''})
-# @app.route('/<path:path>')
-# def serve(path):
-#     if path != "" and os.path.exists(app.static_folder + '/' + path):
-#         return send_from_directory(app.static_folder, path)
-#     else:
-#         # return send_from_directory(app.static_folder, 'index.html')
-#         return render_template('index.html')
 
 
 
@@ -162,7 +141,6 @@ def send_data_event(data):
     identifier = {"prefix":"flaskinterface","process_id":"SIO","sid":str(request.sid)}
     sendData = {'data':packetData.get('data'),
                 'identifier':identifier}
-    # r.lpush("SendQueue",json.dumps(sendData))
     try:
         sendQ.put_nowait(sendData)
     except Full:
@@ -245,7 +223,7 @@ def __FlaskInterfaceResponseHandler__(receiveQ:mp.Queue,dtrh_receiveQ:mp.Queue):
 
     while flaskinterface_response_task_running:
         try:
-            item:dict = receiveQ.get(block=False)  #expect a dict
+            item:dict = receiveQ.get(block=True)  #expect a dict
             item_type = item['type'] #retrieve type of item
         
             if item_type == 'response':
@@ -292,7 +270,7 @@ def __FlaskInterfaceResponseHandler__(receiveQ:mp.Queue,dtrh_receiveQ:mp.Queue):
                 __SocketIOMessageHandler__(item)
         except Empty:
             pass
-        eventlet.sleep(0.001)
+        # eventlet.sleep(0.001)
 
 
     
