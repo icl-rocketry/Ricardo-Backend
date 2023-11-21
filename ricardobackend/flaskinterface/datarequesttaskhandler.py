@@ -18,6 +18,7 @@ import multiprocessing as mp
 from queue import Full,Empty
 import os
 
+import eventlet
 
 
 
@@ -131,7 +132,7 @@ class DataRequestTask():
                  print('[ERROR - Data Task Request Handler] key not found, skipping...')
 
         return packetData
-
+    
 
     def __exit__(self,*args):
         self.logfile.close()
@@ -141,7 +142,7 @@ class DataRequestTask():
 class DataRequestTaskHandler():
 
 
-    def __init__(self,sio_instance,sendQ=None,receiveQ = None,socketiohost=None,socketioport=None,prefix:str = "flaskinterface",verbose:bool=False):
+    def __init__(self,sio_instance,sendQ=None,receiveQ = None,prefix:str = "flaskinterface",verbose:bool=False):
         # self.r = redis.Redis(redishost,redisport)
         if sendQ is None or receiveQ is None:
             raise Exception('No send queue or receive queue provided')
@@ -246,7 +247,7 @@ class DataRequestTaskHandler():
         [self.task_container.pop(task_id).__exit__() for task_id in task_ids] 
 
 
-
+    
     def mainloop(self):
         while self.run:
             for task_id,task in self.task_container.items():    

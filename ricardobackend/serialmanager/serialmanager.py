@@ -12,8 +12,6 @@ from queue import Full, Empty
 
 
 class SerialManager():
-	# SimpleSend:int = 0
-	# WaitForIncomming:int = 1
 
 	def __init__(self, device, baud=115200, autoreconnect=True, waittime = .3,sendQ = None,receiveQ_dict = None,verbose=False,UDPMonitor=False,UDPIp='127.0.0.1',UDPPort=7000):
 		signal.signal(signal.SIGINT,self.exitHandler)
@@ -23,14 +21,10 @@ class SerialManager():
 		self.autoreconnect = autoreconnect
 		self.waittime = waittime
 		
-		# self.sendMode = SerialManager.SimpleSend
 		self.prevSendTime = 0
 
 		 
 		self.sendDelta = 1e4
-
-		# self.sentWaitTimeout:int=1000e6
-		# self.received_packet:bool=False
 
 		self.verbose = verbose
 		

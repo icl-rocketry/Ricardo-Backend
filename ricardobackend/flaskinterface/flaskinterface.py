@@ -44,7 +44,7 @@ app.config['DEBUG'] = False
 socketio = SocketIO(app,cors_allowed_origins="*",async_mode='eventlet',logger=False)
 socketio_clients = []
 #flask rest api variables
-rest_response_queue_maxsize = 10
+rest_response_queue_maxsize = 100
 rest_response_list = None #this will be a dict mapping to queues {"clientid1":Queue,"clientid2":Queue}
 
 # SYSTEM VARIABLES
