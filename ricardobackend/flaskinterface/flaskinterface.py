@@ -11,7 +11,7 @@ from .taskhandler_webui import taskhandler_webui_bp
 from .telemetry_webui import telemetry_webui_bp
 from .command_webui import command_webui_bp
 from .datarequesttaskhandler import DataRequestTaskHandler
-from .emitter import EmitterClass
+from .emitter import Emitter
 
     
 # system packages
@@ -210,11 +210,13 @@ def __SocketIOMessageHandler__(message:dict):
 
 # dummy signal
 def __DummySignalBroadcastTask__(verbose=False):
-    global dummy_signal_running
-    dummy_signal_running = True
-    e = EmitterClass(socketio,'telemetry-log',verbose=verbose)
-    while dummy_signal_running:
-        e.emit() #call emit
+    # Create emitter
+    emitter = Emitter(socketio, loop=True)
+
+    # Run emitter until finished
+    emitter.run()
+
+    # Print exit message
     print('DummySignalBroadCastTask Killed')
 
 def __FlaskInterfaceResponseHandler__(receiveQ:mp.Queue,dtrh_receiveQ:mp.Queue):
