@@ -223,7 +223,7 @@ def __FlaskInterfaceResponseHandler__(receiveQ:mp.Queue,dtrh_receiveQ:mp.Queue):
 
     while flaskinterface_response_task_running:
         try:
-            item:dict = receiveQ.get(block=True)  #expect a dict
+            item:dict = receiveQ.get(block=False)  #expect a dict
             item_type = item['type'] #retrieve type of item
         
             if item_type == 'response':
@@ -270,7 +270,7 @@ def __FlaskInterfaceResponseHandler__(receiveQ:mp.Queue,dtrh_receiveQ:mp.Queue):
                 __SocketIOMessageHandler__(item)
         except Empty:
             pass
-        # eventlet.sleep(0.001)
+        eventlet.sleep(0.001)
 
 
     

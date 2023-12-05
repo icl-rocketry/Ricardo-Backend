@@ -38,9 +38,6 @@ class SerialManager():
 
 		self.receivedQueueTimeout = 10*60 #default 10 minute timeout
 
-		# self.redishost = redishost
-		# self.redisport= redisport
-
 		if sendQ is None or receiveQ_dict is None:
 			raise Exception('[Serial-Manager] - Error, no sendqueue or receivequeue passed, exiting')
 
@@ -226,20 +223,9 @@ class SerialManager():
 		
 
 	def __checkSendQueue__(self):
-		#check if there are items present in send queue
-		# if (time.time_ns() - self.prevSendTime) > self.sendDelta :
-		# if (self.sendMode == SerialManager.WaitForIncomming):
-		# 	if (self.received_packet):
-		# 		self.__processSendQueue__()
-		# 		self.received_packet = False
-		# 	elif (time.time_ns() - self.prevSendTime > self.sentWaitTimeout):
-		# 		# self.__sm_log__("receive timeout, sending new packet")
-		# 		self.__processSendQueue__()
-		# elif (self.sendMode == SerialManager.SimpleSend):
-		# 	if (time.time_ns()-self.prevSendTime > self.sendDelta):
-		# 		self.__processSendQueue__()
 		if (time.time_ns()-self.prevSendTime > self.sendDelta):
 				self.__processSendQueue__()
+				self.prevSendTime = time.time_ns()
 
 	def __sm_log__(self,msg):
 		#serial maanger logger, will replace with something better than self.__sm_log__ in the future - famous last words
