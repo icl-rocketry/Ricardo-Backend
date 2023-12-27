@@ -47,7 +47,7 @@ def exitBackend(sig,frame):
 
     sys.exit(0)
 
-def startSerialManager(args,sendQueue,receiveQueue_dict):
+def startSerialManager(args,sendQueue,receiveQueue):
 
     serman = serialmanager.SerialManager(device = args["device"],
                                      baud = args["baud"],
@@ -57,7 +57,7 @@ def startSerialManager(args,sendQueue,receiveQueue_dict):
                                      UDPPort=args["monitor_port"],
                                      verbose=args['verbose'],
                                      sendQ=sendQueue,
-                                     receiveQ_dict=receiveQueue_dict)
+                                     receiveQ=receiveQueue)
     serman.run()
 
 def startWebSocketForwarder(args):
@@ -83,16 +83,17 @@ if __name__ == '__main__':
 
     
     sendQueue = multiprocessing.Queue()
-    receiveQueue_dict = {"flaskinterface":multiprocessing.Queue()}
+    # receiveQueue_dict = {"flaskinterface":multiprocessing.Queue()}
+    receiveQueue = multiprocessing.Queue()
 
     if not (argsin['fake_data']):
         if argsin.get('device',None) is None:
             raise Exception("No device passed")
-        proclist['serialmanager'] = multiprocessing.Process(target=startSerialManager,args=(argsin,sendQueue,receiveQueue_dict,))
+        proclist['serialmanager'] = multiprocessing.Process(target=startSerialManager,args=(argsin,sendQueue,receiveQueue,))
         proclist['serialmanager'].start()
 
     #start flask interface process
-    proclist['flaskinterface'] = multiprocessing.Process(target=startFlaskInterface,args=(argsin,sendQueue,receiveQueue_dict['flaskinterface']))
+    proclist['flaskinterface'] = multiprocessing.Process(target=startFlaskInterface,args=(argsin,sendQueue,receiveQueue))
     proclist['flaskinterface'].start()
     time.sleep(1)
 

@@ -75,7 +75,7 @@ def send_packet():
     if packet_data == None:
         return 'Bad Request',400
     if all (keys in packet_data for keys in ("data","clientid")):
-
+        ##TODO:DRY
         identifier = {"prefix":"flaskinterface","process_id":"REST","clientid":packet_data['clientid']}
         sendData = {'data':packet_data.get('data'),
                     'identifier':identifier}
@@ -84,7 +84,6 @@ def send_packet():
         except Full:
             print('[Flask-Inteface] Send Queue full, discarding packet!')
 
-        # r.lpush("SendQueue",json.dumps(packet_data))
         return 'OK',200
     else:
         return 'Bad Request',400
@@ -135,6 +134,7 @@ def connect_command():
 def send_data_event(data):
     global sendQ
     packetData = data
+    ##TODO:DRY!!
     if 'data' not in packetData.keys():
         emit('Error',{'Error':'No Data!'},namespace='/packet')
         return

@@ -13,7 +13,7 @@ from queue import Full, Empty
 
 class SerialManager():
 
-	def __init__(self, device, baud=115200, autoreconnect=True, waittime = .3,sendQ = None,receiveQ_dict = None,verbose=False,UDPMonitor=False,UDPIp='127.0.0.1',UDPPort=7000):
+	def __init__(self, device, baud=115200, autoreconnect=True, waittime = .3,sendQ = None,receiveQ = None,verbose=False,UDPMonitor=False,UDPIp='127.0.0.1',UDPPort=7000):
 		signal.signal(signal.SIGINT,self.exitHandler)
 		signal.signal(signal.SIGTERM,self.exitHandler)
 		self.device = device
@@ -38,11 +38,12 @@ class SerialManager():
 
 		self.receivedQueueTimeout = 10*60 #default 10 minute timeout
 
-		if sendQ is None or receiveQ_dict is None:
+		if sendQ is None or receiveQ is None:
 			raise Exception('[Serial-Manager] - Error, no sendqueue or receivequeue passed, exiting')
 
 		self.sendQ:mp.Queue = sendQ
-		self.receiveQ_dict:dict = receiveQ_dict #{"prefix1":mp.Queue,"prefix2":mp.Queue}...
+		# self.receiveQ_dict:dict = receiveQ_dict #{"prefix1":mp.Queue,"prefix2":mp.Queue}...
+		self.receiveQ:dict = receiveQ
 
 		self.UDPMonitor = UDPMonitor
 		self.sock = None
@@ -176,15 +177,15 @@ class SerialManager():
 			#get client id from packetrecord and remove corresponding entry
 			identifier = self.packetRecord.pop(uid)[0]
 			#retreive the appropriate queue
-			try:
-				queue:mp.Queue = self.receiveQ_dict[identifier['prefix']]
-			except KeyError:
-				self.__sm_log__('Invalid key: ' + identifier['prefix'] + 'dumping packet!')
-				return
+			# try:
+			# 	queue:mp.Queue = self.receiveQ_dict[identifier['prefix']]
+			# except KeyError:
+			# 	self.__sm_log__('Invalid key: ' + identifier['prefix'] + 'dumping packet!')
+			# 	return
 
 			try:
 				sendData = {'identifier':identifier,'type':'response','data':data}
-				queue.put_nowait(sendData)
+				self.receiveQ.put_nowait(sendData)
 			except Full:
 				self.__sm_log__('receive queue full, dumping packet!')
 				return
@@ -277,12 +278,17 @@ class SerialManager():
 			json_message = {"header" : vars(header),
 							"message": message}
 			#broadcast message to all receive queues
-			for queue in self.receiveQ_dict.values():
-				try:
-					json_message['type'] = "logmessage"
-					queue.put_nowait(json_message)
-				except Full:
-					self.__sm_log__('receive Queue full, skipping message')
+			# for queue in self.receiveQ_dict.values():
+			# 	try:
+			# 		json_message['type'] = "logmessage"
+			# 		queue.put_nowait(json_message)
+			# 	except Full:
+			# 		self.__sm_log__('receive Queue full, skipping message')
+			try:
+				json_message['type'] = "logmessage"
+				self.receiveQ.put_nowait(json_message)
+			except Full:
+				self.__sm_log__('receive Queue full, skipping message')
 
 			return
 		
