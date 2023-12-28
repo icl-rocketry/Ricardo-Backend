@@ -1,5 +1,5 @@
 # PACKAGES
-# flask packages
+
 from queue import Empty, Full
 from flask import Flask, request, render_template
 from flask_socketio import SocketIO, emit, send # added emit from flask_socketio
@@ -36,8 +36,7 @@ app.register_blueprint(command_webui_bp, url_prefix="/command_ui")
 app.register_blueprint(telemetry_webui_bp, url_prefix="/telemetry_ui")
 app.register_blueprint(taskhandler_webui_bp, url_prefix="/taskhandler_ui")
 
-# app = Flask(__name__, static_folder='static/react')
-#app = Flask(__name__)
+
 app.config["SECRET_KEY"] = "secret!"
 app.config['DEBUG'] = False
 # socketio app

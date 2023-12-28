@@ -63,7 +63,6 @@ class SerialManager():
 		
 	def run(self):
 		with socket.socket(socket.AF_INET,socket.SOCK_DGRAM) as self.sock:
-			# self.__connect__() #connect to ricardo 
 			self.__auto_connect__()
 			
 			while True:
@@ -145,7 +144,8 @@ class SerialManager():
 			if (incomming == (0x00).to_bytes(1,'little')):
 				if (len(self.receiveBuffer) == 0):
 					#empty frame receved, discard this
-					return
+					# return
+					break
 				try:
 					decodedData = cobs.decode(bytearray(self.receiveBuffer))
 					self.__processReceivedPacket__(decodedData)
@@ -183,12 +183,6 @@ class SerialManager():
 		if uid in self.packetRecord:
 			#get client id from packetrecord and remove corresponding entry
 			identifier = self.packetRecord.pop(uid)[0]
-			#retreive the appropriate queue
-			# try:
-			# 	queue:mp.Queue = self.receiveQ_dict[identifier['prefix']]
-			# except KeyError:
-			# 	self.__sm_log__('Invalid key: ' + identifier['prefix'] + 'dumping packet!')
-			# 	return
 
 			try:
 				sendData = {'identifier':identifier,'type':'response','data':data}
