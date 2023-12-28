@@ -53,6 +53,13 @@ class SerialManager():
 			self.UDPPort = UDPPort
 			
 
+		self.localPacketHandlerCallbacks:dict = {}
+		#refister default message packet callback on serial manager
+		#callback must have the folloing type 
+		#def cb1(data:bytes)
+	
+		self.registerLocalPacketHandlerCallback(100,self.__decodeMessagePacket__)
+
 		
 	def run(self):
 		with socket.socket(socket.AF_INET,socket.SOCK_DGRAM) as self.sock:
@@ -194,7 +201,7 @@ class SerialManager():
 		else:
 			#handle packets addressed to the local packet handler on the backend
 			if (uid == 0) and (header.destination_service == 0):
-				self.__localPacketHandler__(data)
+				self.localPacketHandlerCallbacks.get(header.packet_type,lambda: None)(data)
 				
 				return
 
@@ -204,9 +211,6 @@ class SerialManager():
 			return
 
 			
-		
-
-
 	def __sendPacket__(self,data:bytes,identifier:dict):
 		header = RnpHeader.from_bytes(data)#decode header
 		uid = self.__generateUID__() #get uuid
@@ -264,31 +268,29 @@ class SerialManager():
 		if (self.UDPMonitor):
 			self.sock.sendto(data,(self.UDPIp,self.UDPPort))
 
-	def __localPacketHandler__(self,data:bytes):
-		#decode header
-		header = RnpHeader.from_bytes(data)
-		if (header.packet_type == 100): #message packet
-			packet_body = data[RnpHeader.size:]
-			try:
-				message:str = packet_body.decode('UTF-8') 
-			except:
-				message:str = str(packet_body)
-			if self.verbose:
-				self.__sm_log__("Message: " + message)
-			json_message = {"header" : vars(header),
-							"message": message}
-			#broadcast message to all receive queues
-			# for queue in self.receiveQ_dict.values():
-			# 	try:
-			# 		json_message['type'] = "logmessage"
-			# 		queue.put_nowait(json_message)
-			# 	except Full:
-			# 		self.__sm_log__('receive Queue full, skipping message')
-			try:
-				json_message['type'] = "logmessage"
-				self.receiveQ.put_nowait(json_message)
-			except Full:
-				self.__sm_log__('receive Queue full, skipping message')
+		
+	def registerLocalPacketHandlerCallback(self,packet_type:int,callback):
+		#will override any existing callbacks
+		self.localPacketHandlerCallbacks[packet_type] = callback
 
-			return
+	def __decodeMessagePacket__(self,data:bytes):
+		header = RnpHeader.from_bytes(data)
+		packet_body = data[RnpHeader.size:]
+		try:
+			message:str = packet_body.decode('UTF-8') 
+		except:
+			message:str = str(packet_body)
+		if self.verbose:
+			self.__sm_log__("Message: " + message)
+		json_message = {"header" : vars(header),
+						"message": message}
+	
+		try:
+			json_message['type'] = "logmessage"
+			self.receiveQ.put_nowait(json_message)
+		except Full:
+			self.__sm_log__('receive Queue full, skipping message')
+
+
+
 		
