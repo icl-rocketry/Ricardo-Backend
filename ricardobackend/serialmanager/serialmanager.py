@@ -101,29 +101,41 @@ class SerialManager():
 			
 	def __connect__(self):
 		boot_messages = ''
-		self.ser = serial.Serial(port=self.device, baudrate=self.baud, timeout = self.waittime)  # open serial port
+		self.ser = serial.Serial(port=None, baudrate=self.baud, timeout = self.waittime)  # open serial port
+		self.ser.port = self.device
 
 		self.ser.stopbits = serial.STOPBITS_ONE
 		self.ser.parity = serial.PARITY_NONE
 		self.ser.bytesize = serial.EIGHTBITS
 
-		#self.__sm_log__('call reset on esp32')
-		self.ser.setDTR(False)
-		time.sleep(1)
-		self.ser.flushInput()
-		self.ser.setDTR(True)
+		self.ser.rts = False
+		self.ser.dtr = False
+		
+		self.ser.open()
+
+		self.ser.rts = True
+		self.ser.dtr = True
+		
+		#force esp32 reset
+
+		self.ser.rts = False
+		time.sleep(0.005) #minimal EN delay from idf_monitor.py->constants.py
+		self.ser.rts = True
+
+		# self.ser.flushInput()
+		# self.ser.setDTR(True)
 		#self.__sm_log__('esp32 reset')
-		self.ser.flushInput()
+		# self.ser.flushInput()
 
 		#get boot messages after reboot
-		while (self.ser.in_waiting):
-			data = self.ser.read(1)
-			try:
-				boot_messages += data.decode("utf-8")
-			except:
-				boot_messages += str(data)
-		# if self.verbose:
-		self.__sm_log__(boot_messages)
+		# while (self.ser.in_waiting):
+		# 	data = self.ser.read(1)
+		# 	try:
+		# 		boot_messages += data.decode("utf-8")
+		# 	except:
+		# 		boot_messages += str(data)
+		# # if self.verbose:
+		# self.__sm_log__(boot_messages)
 
 	def __readPacket__(self):
 		#cobs decode
