@@ -3,7 +3,7 @@
   "task_name": "fc_telemetry",
   "autostart": false,
   "poll_delta": 500,
-  "running": false,
+  "running": true,
   "logger": false,
   "receiveOnly": false,
   "request_config": {
@@ -205,10 +205,10 @@
     ]
    }
   ],
-  "rxCounter": 0,
-  "txCounter": 0,
+  "rxCounter": 259,
+  "txCounter": 259,
   "connected": true,
-  "lastReceivedPacket": ""
+  "lastReceivedPacket": "afab003242020065020101000000000000000000000000000000000000000000000000000000000000000000000000d532f6bfd22f093f49df2bc05e2cac3efe5800bdbb024e3f3f27fabe0000000000000000000000000000a00bbf00605bbf00c0a3be231c613f939ad43fe315afbe0000fa3d00007abd00803bbe0040c53d00f4043f00a89a3e8ece9343d09cc747eb6e91c2c714d30000000000000000000000000002400400f51b0600000000008eff00000000"
  },
  {
   "task_name": "pdu_voltage",
@@ -282,8 +282,8 @@
  {
   "task_name": "freeram",
   "autostart": false,
-  "poll_delta": 50,
-  "running": false,
+  "poll_delta": 100,
+  "running": true,
   "logger": true,
   "receiveOnly": false,
   "request_config": {
@@ -296,10 +296,10 @@
   "packet_descriptor": {
    "ram": "uint32_t"
   },
-  "rxCounter": 0,
-  "txCounter": 0,
+  "rxCounter": 6,
+  "txCounter": 6,
   "connected": true,
-  "lastReceivedPacket": ""
+  "lastReceivedPacket": "af040039420200690201013ce20300"
  },
  {
   "task_name": "act0_telemetry",
@@ -1823,5 +1823,241 @@
   "txCounter": 0,
   "connected": true,
   "lastReceivedPacket": ""
+ },
+ {
+  "task_name": "picklepyr0_telemetry",
+  "autostart": false,
+  "poll_delta": 100,
+  "running": true,
+  "logger": true,
+  "receiveOnly": false,
+  "request_config": {
+   "source": 1,
+   "destination": 0,
+   "destination_service": 10,
+   "command_id": 1,
+   "command_arg": 0
+  },
+  "packet_descriptor": {
+   "state": "uint16_t",
+   "value": "int32_t"
+  },
+  "bitfield_decoders": [
+   {
+    "variable_name": "component_status",
+    "bitfield": "state",
+    "flags": [
+     {
+      "id": 0,
+      "description": "NOMINAL"
+     },
+     {
+      "id": 1,
+      "description": "DISARMED"
+     },
+     {
+      "id": 2,
+      "description": "ERROR_NORESPONSE"
+     },
+     {
+      "id": 3,
+      "description": "ERROR_CONTINUITY"
+     },
+     {
+      "id": 4,
+      "description": "ERROR_PINS"
+     },
+     {
+      "id": 5,
+      "description": "ERROR_I2C"
+     },
+     {
+      "id": 6,
+      "description": "ERROR"
+     }
+    ]
+   }
+  ],
+  "rxCounter": 3608,
+  "txCounter": 3608,
+  "connected": true,
+  "lastReceivedPacket": "af060035420a0001020101090000000000"
+ },
+ {
+  "task_name": "picklepyr1_telemetry",
+  "autostart": false,
+  "poll_delta": 100,
+  "running": true,
+  "logger": true,
+  "receiveOnly": false,
+  "request_config": {
+   "source": 1,
+   "destination": 0,
+   "destination_service": 11,
+   "command_id": 1,
+   "command_arg": 0
+  },
+  "packet_descriptor": {
+   "state": "uint16_t",
+   "value": "int32_t"
+  },
+  "bitfield_decoders": [
+   {
+    "variable_name": "component_status",
+    "bitfield": "state",
+    "flags": [
+     {
+      "id": 0,
+      "description": "NOMINAL"
+     },
+     {
+      "id": 1,
+      "description": "DISARMED"
+     },
+     {
+      "id": 2,
+      "description": "ERROR_NORESPONSE"
+     },
+     {
+      "id": 3,
+      "description": "ERROR_CONTINUITY"
+     },
+     {
+      "id": 4,
+      "description": "ERROR_PINS"
+     },
+     {
+      "id": 5,
+      "description": "ERROR_I2C"
+     },
+     {
+      "id": 6,
+      "description": "ERROR"
+     }
+    ]
+   }
+  ],
+  "rxCounter": 3569,
+  "txCounter": 3569,
+  "connected": true,
+  "lastReceivedPacket": "af060036420b0001020101090000000000"
+ },
+ {
+  "task_name": "picklepyr2_telemetry",
+  "autostart": false,
+  "poll_delta": 100,
+  "running": true,
+  "logger": true,
+  "receiveOnly": false,
+  "request_config": {
+   "source": 1,
+   "destination": 0,
+   "destination_service": 12,
+   "command_id": 1,
+   "command_arg": 0
+  },
+  "packet_descriptor": {
+   "state": "uint16_t",
+   "value": "int32_t"
+  },
+  "bitfield_decoders": [
+   {
+    "variable_name": "component_status",
+    "bitfield": "state",
+    "flags": [
+     {
+      "id": 0,
+      "description": "NOMINAL"
+     },
+     {
+      "id": 1,
+      "description": "DISARMED"
+     },
+     {
+      "id": 2,
+      "description": "ERROR_NORESPONSE"
+     },
+     {
+      "id": 3,
+      "description": "ERROR_CONTINUITY"
+     },
+     {
+      "id": 4,
+      "description": "ERROR_PINS"
+     },
+     {
+      "id": 5,
+      "description": "ERROR_I2C"
+     },
+     {
+      "id": 6,
+      "description": "ERROR"
+     }
+    ]
+   }
+  ],
+  "rxCounter": 3536,
+  "txCounter": 3536,
+  "connected": true,
+  "lastReceivedPacket": "af060038420c0001020101090000000000"
+ },
+ {
+  "task_name": "picklepyr3_telemetry",
+  "autostart": false,
+  "poll_delta": 100,
+  "running": true,
+  "logger": true,
+  "receiveOnly": false,
+  "request_config": {
+   "source": 1,
+   "destination": 0,
+   "destination_service": 13,
+   "command_id": 1,
+   "command_arg": 0
+  },
+  "packet_descriptor": {
+   "state": "uint16_t",
+   "value": "int32_t"
+  },
+  "bitfield_decoders": [
+   {
+    "variable_name": "component_status",
+    "bitfield": "state",
+    "flags": [
+     {
+      "id": 0,
+      "description": "NOMINAL"
+     },
+     {
+      "id": 1,
+      "description": "DISARMED"
+     },
+     {
+      "id": 2,
+      "description": "ERROR_NORESPONSE"
+     },
+     {
+      "id": 3,
+      "description": "ERROR_CONTINUITY"
+     },
+     {
+      "id": 4,
+      "description": "ERROR_PINS"
+     },
+     {
+      "id": 5,
+      "description": "ERROR_I2C"
+     },
+     {
+      "id": 6,
+      "description": "ERROR"
+     }
+    ]
+   }
+  ],
+  "rxCounter": 3500,
+  "txCounter": 3500,
+  "connected": true,
+  "lastReceivedPacket": "af060037420d0001020101010000000000"
  }
 ]
