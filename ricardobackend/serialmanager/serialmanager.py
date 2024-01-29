@@ -13,7 +13,7 @@ from queue import Full, Empty
 
 class SerialManager():
 
-	def __init__(self, device, baud=115200, autoreconnect=True, waittime = .3,sendQ = None,receiveQ_dict = None,verbose=False,UDPMonitor=False,UDPIp='127.0.0.1',UDPPort=7000):
+	def __init__(self, device, baud=115200, autoreconnect=True, waittime = .3,sendQ = None,receiveQ = None,verbose=False,UDPMonitor=False,UDPIp='127.0.0.1',UDPPort=7000):
 		signal.signal(signal.SIGINT,self.exitHandler)
 		signal.signal(signal.SIGTERM,self.exitHandler)
 		self.device = device
@@ -38,11 +38,12 @@ class SerialManager():
 
 		self.receivedQueueTimeout = 10*60 #default 10 minute timeout
 
-		if sendQ is None or receiveQ_dict is None:
+		if sendQ is None or receiveQ is None:
 			raise Exception('[Serial-Manager] - Error, no sendqueue or receivequeue passed, exiting')
 
 		self.sendQ:mp.Queue = sendQ
-		self.receiveQ_dict:dict = receiveQ_dict #{"prefix1":mp.Queue,"prefix2":mp.Queue}...
+		# self.receiveQ_dict:dict = receiveQ_dict #{"prefix1":mp.Queue,"prefix2":mp.Queue}...
+		self.receiveQ:dict = receiveQ
 
 		self.UDPMonitor = UDPMonitor
 		self.sock = None
@@ -52,10 +53,16 @@ class SerialManager():
 			self.UDPPort = UDPPort
 			
 
+		self.localPacketHandlerCallbacks:dict = {}
+		#refister default message packet callback on serial manager
+		#callback must have the folloing type 
+		#def cb1(data:bytes)
+	
+		self.registerLocalPacketHandlerCallback(100,self.__decodeMessagePacket__)
+
 		
 	def run(self):
 		with socket.socket(socket.AF_INET,socket.SOCK_DGRAM) as self.sock:
-			# self.__connect__() #connect to ricardo 
 			self.__auto_connect__()
 			
 			while True:
@@ -65,16 +72,14 @@ class SerialManager():
 					self.__cleanupPacketRecord__()
 					time.sleep(0.001)
 				except (OSError, serial.SerialException):
+					self.__disconnect__()
 					self.__auto_connect__()
 
 					
 		
 	def exitHandler(self,sig,frame):
 		self.__sm_log__("Serial Manager Exited")
-		try:
-			self.ser.close() #close serial port
-		except AttributeError:
-			pass
+		self.__disconnect__()
 		sys.exit(0)
 
 	def __auto_connect__(self):
@@ -91,32 +96,50 @@ class SerialManager():
 				else:
 					self.__sm_log__('Device ' + self.device + ' Disconnected, killing serial manager. Bye bye!')
 					self.exitHandler(None,None)
-			
+	
+	def __disconnect__(self):
+		try:
+			self.ser.close()
+		except AttributeError:
+			pass
+
 	def __connect__(self):
 		boot_messages = ''
-		self.ser = serial.Serial(port=self.device, baudrate=self.baud, timeout = self.waittime)  # open serial port
+		self.ser = serial.Serial(port=None, baudrate=self.baud, timeout = self.waittime)  # open serial port
+		self.ser.port = self.device
 
 		self.ser.stopbits = serial.STOPBITS_ONE
 		self.ser.parity = serial.PARITY_NONE
 		self.ser.bytesize = serial.EIGHTBITS
 
-		#self.__sm_log__('call reset on esp32')
-		self.ser.setDTR(False)
-		time.sleep(1)
-		self.ser.flushInput()
-		self.ser.setDTR(True)
+		self.ser.rts = False
+		self.ser.dtr = False
+		
+		self.ser.open()
+
+		self.ser.rts = True
+		self.ser.dtr = True
+		
+		#force esp32 reset
+
+		self.ser.rts = False
+		time.sleep(0.005) #minimal EN delay from idf_monitor.py->constants.py
+		self.ser.rts = True
+
+		# self.ser.flushInput()
+		# self.ser.setDTR(True)
 		#self.__sm_log__('esp32 reset')
-		self.ser.flushInput()
+		# self.ser.flushInput()
 
 		#get boot messages after reboot
-		while (self.ser.in_waiting):
-			data = self.ser.read(1)
-			try:
-				boot_messages += data.decode("utf-8")
-			except:
-				boot_messages += str(data)
-		# if self.verbose:
-		self.__sm_log__(boot_messages)
+		# while (self.ser.in_waiting):
+		# 	data = self.ser.read(1)
+		# 	try:
+		# 		boot_messages += data.decode("utf-8")
+		# 	except:
+		# 		boot_messages += str(data)
+		# # if self.verbose:
+		# self.__sm_log__(boot_messages)
 
 	def __readPacket__(self):
 		#cobs decode
@@ -137,7 +160,8 @@ class SerialManager():
 			if (incomming == (0x00).to_bytes(1,'little')):
 				if (len(self.receiveBuffer) == 0):
 					#empty frame receved, discard this
-					return
+					# return
+					break
 				try:
 					decodedData = cobs.decode(bytearray(self.receiveBuffer))
 					self.__processReceivedPacket__(decodedData)
@@ -175,16 +199,10 @@ class SerialManager():
 		if uid in self.packetRecord:
 			#get client id from packetrecord and remove corresponding entry
 			identifier = self.packetRecord.pop(uid)[0]
-			#retreive the appropriate queue
-			try:
-				queue:mp.Queue = self.receiveQ_dict[identifier['prefix']]
-			except KeyError:
-				self.__sm_log__('Invalid key: ' + identifier['prefix'] + 'dumping packet!')
-				return
 
 			try:
 				sendData = {'identifier':identifier,'type':'response','data':data}
-				queue.put_nowait(sendData)
+				self.receiveQ.put_nowait(sendData)
 			except Full:
 				self.__sm_log__('receive queue full, dumping packet!')
 				return
@@ -193,7 +211,7 @@ class SerialManager():
 		else:
 			#handle packets addressed to the local packet handler on the backend
 			if (uid == 0) and (header.destination_service == 0):
-				self.__localPacketHandler__(data)
+				self.localPacketHandlerCallbacks.get(header.packet_type,lambda: None)(data)
 				
 				return
 
@@ -203,9 +221,6 @@ class SerialManager():
 			return
 
 			
-		
-
-
 	def __sendPacket__(self,data:bytes,identifier:dict):
 		header = RnpHeader.from_bytes(data)#decode header
 		uid = self.__generateUID__() #get uuid
@@ -263,26 +278,29 @@ class SerialManager():
 		if (self.UDPMonitor):
 			self.sock.sendto(data,(self.UDPIp,self.UDPPort))
 
-	def __localPacketHandler__(self,data:bytes):
-		#decode header
-		header = RnpHeader.from_bytes(data)
-		if (header.packet_type == 100): #message packet
-			packet_body = data[RnpHeader.size:]
-			try:
-				message:str = packet_body.decode('UTF-8') 
-			except:
-				message:str = str(packet_body)
-			if self.verbose:
-				self.__sm_log__("Message: " + message)
-			json_message = {"header" : vars(header),
-							"message": message}
-			#broadcast message to all receive queues
-			for queue in self.receiveQ_dict.values():
-				try:
-					json_message['type'] = "logmessage"
-					queue.put_nowait(json_message)
-				except Full:
-					self.__sm_log__('receive Queue full, skipping message')
+		
+	def registerLocalPacketHandlerCallback(self,packet_type:int,callback):
+		#will override any existing callbacks
+		self.localPacketHandlerCallbacks[packet_type] = callback
 
-			return
+	def __decodeMessagePacket__(self,data:bytes):
+		header = RnpHeader.from_bytes(data)
+		packet_body = data[RnpHeader.size:]
+		try:
+			message:str = packet_body.decode('UTF-8') 
+		except:
+			message:str = str(packet_body)
+		if self.verbose:
+			self.__sm_log__("Message: " + message)
+		json_message = {"header" : vars(header),
+						"message": message}
+	
+		try:
+			json_message['type'] = "logmessage"
+			self.receiveQ.put_nowait(json_message)
+		except Full:
+			self.__sm_log__('receive Queue full, skipping message')
+
+
+
 		
