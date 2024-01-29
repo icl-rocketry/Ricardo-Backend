@@ -2,14 +2,14 @@
     {
     "task_name": "fuelventsrv_telemetry",
     "autostart": false,
-    "poll_delta": 20,
+    "poll_delta": 500,
     "running": false,
     "logger": true,
     "receiveOnly": false,
     "request_config": {
      "source": 1,
-     "destination": 7,
-     "destination_service": 11,
+     "destination": 104,
+     "destination_service": 10,
      "command_id": 1,
      "command_arg": 0
     },
