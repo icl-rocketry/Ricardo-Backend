@@ -185,10 +185,8 @@ class DataRequestTaskHandler():
         """Adds a new task to the config to reques new data"""
         #if already exists, delete old task and spin up new one
         task_id = data["task_name"]
-        if task_id in self.task_container.keys():
-            self.task_container[task_id].updateConfig(data)
-        else:
-            self.task_container[task_id] = DataRequestTask(data)
+        self.task_container[task_id] = DataRequestTask(data)
+
 
   
     def on_delete_task_config(self,data):
