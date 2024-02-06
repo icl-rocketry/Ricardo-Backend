@@ -1,0 +1,47 @@
+{
+    "task_name": "senraw0_telemetry",
+    "autostart": false,
+    "poll_delta": 50,
+    "running": true,
+    "logger": true,
+    "receiveOnly": false,
+    "request_config": {
+      "source": 1,
+      "destination": 106,
+      "destination_service": 2,
+      "command_id": 9,
+      "command_arg": 0
+    },
+    "packet_descriptor": {
+      "ch0sens": "int32_t",
+      "ch1sens": "int32_t",
+      "ch2sens": "int32_t",
+      "ch3sens": "int32_t",
+      "ch4sens": "int32_t",
+      "ch5sens": "int32_t",
+      "ch6sens": "int32_t",
+      "ch7sens": "int32_t",
+      "ch8sens": "int32_t",
+      "ch9sens": "int32_t",
+      "ch10sens": "int32_t",
+      "ch11sens": "int32_t",
+      "system_status": "uint32_t",
+      "system_time": "uint64_t"
+    },
+    "bitfield_decoders": [
+      {
+        "variable_name": "state",
+        "bitfield": "system_status",
+        "flags": [
+          {
+            "id": 0,
+            "description": "STATE_IDLE"
+          }
+        ]
+      }
+    ],
+    "rxCounter": 1773,
+    "txCounter": 1774,
+    "connected": true,
+    "lastReceivedPacket": ""
+  }

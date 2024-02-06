@@ -2,14 +2,14 @@
     {
     "task_name": "pyreng_telemetry",
     "autostart": false,
-    "poll_delta": 200,
+    "poll_delta": 20,
     "running": false,
     "logger": true,
     "receiveOnly": false,
     "request_config": {
      "source": 1,
-     "destination": 107,
-     "destination_service": 12,
+     "destination": 11,
+     "destination_service": 10,
      "command_id": 1,
      "command_arg": 0
     },

@@ -1,7 +1,7 @@
 [
     {
     "task_name": "act2_telemetry",
-    "autostart": true,
+    "autostart": false,
     "poll_delta": 500,
     "running": false,
     "logger": true,

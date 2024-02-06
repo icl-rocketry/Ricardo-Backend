@@ -2,13 +2,13 @@
     {
     "task_name": "pdu0_telemetry",
     "autostart": false,
-    "poll_delta": 20,
+    "poll_delta": 500,
     "running": false,
     "logger": true,
     "receiveOnly": false,
     "request_config": {
      "source": 1,
-     "destination": 5,
+     "destination": 105,
      "destination_service": 2,
      "command_id": 4,
      "command_arg": 0

@@ -1,15 +1,15 @@
 [
     {
-    "task_name": "pyreng_telemetry",
+    "task_name": "oxventsrv_telemetry",
     "autostart": false,
-    "poll_delta": 200,
+    "poll_delta": 500,
     "running": false,
     "logger": true,
     "receiveOnly": false,
     "request_config": {
      "source": 1,
-     "destination": 107,
-     "destination_service": 12,
+     "destination": 103,
+     "destination_service": 11,
      "command_id": 1,
      "command_arg": 0
     },
