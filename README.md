@@ -6,10 +6,17 @@ High level overview on the wiki (https://wiki.imperialrocketry.com/en/Electronic
 
 # Running
 ## Local
-Install depnendancies using the requirements.txt:
-'''pip install -r requirements.txt'''python
+Install dependancies using the requirements.txt:
+```
+pip install -r requirements.txt
+```
+
 Run:
-'''python ./main.py -d <path_to_device>'''python
+
+```
+python ./main.py -d <path_to_device>
+```
+
 Use the -h flag to see all available command line args.
 
 ## Docker
