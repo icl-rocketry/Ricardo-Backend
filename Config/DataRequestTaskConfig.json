@@ -2,7 +2,7 @@
     {
       "task_name": "fc_telemetry",
       "autostart": false,
-      "poll_delta": 20,
+      "poll_delta": 500,
       "running": false,
       "logger": false,
       "receiveOnly": false,
@@ -264,8 +264,8 @@
     "receiveOnly": false,
     "request_config": {
      "source": 1,
-     "destination": 6,
-     "destination_service": 11,
+     "destination": 5,
+     "destination_service": 10,
      "command_id": 1,
      "command_arg": 0
     },
@@ -324,7 +324,7 @@
     "request_config": {
      "source": 1,
      "destination": 5,
-     "destination_service": 10,
+     "destination_service": 11,
      "command_id": 1,
      "command_arg": 0
     },
@@ -383,7 +383,7 @@
     "request_config": {
      "source": 1,
      "destination": 5,
-     "destination_service": 11,
+     "destination_service": 12,
      "command_id": 1,
      "command_arg": 0
     },
@@ -442,7 +442,7 @@
     "request_config": {
      "source": 1,
      "destination": 5,
-     "destination_service": 12,
+     "destination_service": 13,
      "command_id": 1,
      "command_arg": 0
     },
@@ -500,8 +500,8 @@
     "receiveOnly": false,
     "request_config": {
      "source": 1,
-     "destination": 5,
-     "destination_service": 13,
+     "destination": 6,
+     "destination_service": 10,
      "command_id": 1,
      "command_arg": 0
     },
@@ -560,7 +560,7 @@
     "request_config": {
      "source": 1,
      "destination": 6,
-     "destination_service": 10,
+     "destination_service": 11,
      "command_id": 1,
      "command_arg": 0
     },
