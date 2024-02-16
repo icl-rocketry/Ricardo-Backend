@@ -155,8 +155,8 @@ def disconnect_command():
 
 
 # TASKS
-def startDataRequestHandler(sendQ:mp.Queue,dtrh_receiveQ:mp.Queue,verbose:bool=False):
-    datarequesthandler = DataRequestTaskHandler(socketio,sendQ = sendQ,receiveQ = dtrh_receiveQ,verbose=verbose)
+def startDataRequestHandler(config_dir:str,logs_dir:str,sendQ:mp.Queue,dtrh_receiveQ:mp.Queue,verbose:bool=False):
+    datarequesthandler = DataRequestTaskHandler(socketio,config_dir,logs_dir,sendQ = sendQ,receiveQ = dtrh_receiveQ,verbose=verbose)
     datarequesthandler.mainloop()
 
 #socketio repsonse task
@@ -292,7 +292,7 @@ def cleanup(sig=None,frame=None): #ensure the telemetry broadcast thread has bee
 
 
 # DUTY FUNCTION
-def startFlaskInterface(sendQueue:mp.Queue = None,receiveQueue:mp.Queue = None,flaskhost="0.0.0.0", flaskport=5000, 
+def startFlaskInterface(config_dir:str,logs_dir:str,sendQueue:mp.Queue = None,receiveQueue:mp.Queue = None,flaskhost="0.0.0.0", flaskport=5000, 
                          fake_data=False,verbose=False):
     
     if (fake_data):
@@ -301,7 +301,7 @@ def startFlaskInterface(sendQueue:mp.Queue = None,receiveQueue:mp.Queue = None,f
         print("Reading fake signal from " + fake_signal_filename)
         print("Starting server on port " + str(flaskport) + "...")
 
-        socketio.start_background_task(startDataRequestHandler,mp.Queue,dtrh_receiveQ,verbose=verbose)
+        socketio.start_background_task(startDataRequestHandler,config_dir,logs_dir,mp.Queue,dtrh_receiveQ,verbose=verbose)
         socketio.start_background_task(__DummySignalBroadcastTask__,verbose=verbose)
         socketio.run(app, host=flaskhost, port=flaskport, debug=True, use_reloader=False)
         cleanup()
@@ -316,7 +316,7 @@ def startFlaskInterface(sendQueue:mp.Queue = None,receiveQueue:mp.Queue = None,f
             sendQ = sendQueue
             print("Server starting on port " + str(flaskport) + " ...")
 
-            socketio.start_background_task(startDataRequestHandler,sendQ,dtrh_receiveQ,verbose=verbose)
+            socketio.start_background_task(startDataRequestHandler,config_dir,logs_dir,sendQ,dtrh_receiveQ,verbose=verbose)
             socketio.start_background_task(__FlaskInterfaceResponseHandler__,receiveQueue,dtrh_receiveQ)
             socketio.run(app, host=flaskhost, port=flaskport, debug=False, use_reloader=False)
 
