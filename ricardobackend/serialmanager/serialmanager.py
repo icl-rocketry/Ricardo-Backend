@@ -1,306 +1,432 @@
-# from .packets import *
-from pylibrnp.rnppacket import DeserializationError, RnpHeader
-import serial
-from serial import SerialException
-import time
-from cobs import cobs
-import signal
-import sys
-import socket
+# Standard imports
 import multiprocessing as mp
 from queue import Full, Empty
+import signal
+import sys
+import time
+from typing import Callable, Dict, Union
+
+# Third-party imports
+from cobs import cobs
+import serial
+from serial import SerialException
+import socket
+
+# ICLR imports
+from pylibrnp.rnppacket import DeserializationError, RnpHeader
 
 
-class SerialManager():
+class SerialManager:
 
-	def __init__(self, device, baud=115200, autoreconnect=True, waittime = .3,sendQ = None,receiveQ = None,verbose=False,UDPMonitor=False,UDPIp='127.0.0.1',UDPPort=7000):
-		signal.signal(signal.SIGINT,self.exitHandler)
-		signal.signal(signal.SIGTERM,self.exitHandler)
-		self.device = device
-		self.baud = baud
-		self.autoreconnect = autoreconnect
-		self.waittime = waittime
-		
-		self.prevSendTime = 0
+    def __init__(
+        self,
+        device: str,
+        baud: int = 115200,
+        autoreconnect: bool = True,
+        waittime: float = 0.3,
+        sendQ: Union[None, mp.Queue] = None,
+        receiveQ: Union[None, mp.Queue] = None,
+        verbose: bool = False,
+        UDPMonitor: bool = False,
+        UDPIp: str = "127.0.0.1",
+        UDPPort: int = 7000,
+    ) -> None:
+        # Set signal handlers
+        signal.signal(signal.SIGINT, self.exitHandler)
+        signal.signal(signal.SIGTERM, self.exitHandler)
 
-		 
-		self.sendDelta = 1e4
+        # Store serial device parameters
+        self.device = device
+        self.baud = baud
+        self.waittime = waittime
 
-		self.verbose = verbose
-		
+        # Set parameters for autoreconnection
+        self.autoreconnect = autoreconnect
 
-		self.packetRecordTimeout = 2*60 #default 2 minute timeout
-		self.messageQueueSize = 5000
-		self.receiveBuffer = []
+        # Declare previous send time and delta
+        self.prevSendTime = 0
+        self.sendDelta = 1e4
 
-		self.packetRecord = {} # dict -> {uid:identifier:dict}
-		self.counter = 0
+        # Store verbose flag
+        self.verbose = verbose
 
-		self.receivedQueueTimeout = 10*60 #default 10 minute timeout
+        # Set packet record timeout (default: 2 minutes)
+        self.packetRecordTimeout = 2 * 60
 
-		if sendQ is None or receiveQ is None:
-			raise Exception('[Serial-Manager] - Error, no sendqueue or receivequeue passed, exiting')
+        # Set message queue size
+        self.messageQueueSize = 5000
 
-		self.sendQ:mp.Queue = sendQ
-		# self.receiveQ_dict:dict = receiveQ_dict #{"prefix1":mp.Queue,"prefix2":mp.Queue}...
-		self.receiveQ:dict = receiveQ
+        # Declare receive buffer
+        self.receiveBuffer = []
 
-		self.UDPMonitor = UDPMonitor
-		self.sock = None
-		#setup udp monitor
-		if (UDPMonitor):
-			self.UDPIp = UDPIp
-			self.UDPPort = UDPPort
-			
+        # Declare packet record
+        # TODO: update type (dict -> {uid:identifier:dict})
+        self.packetRecord = {}
 
-		self.localPacketHandlerCallbacks:dict = {}
-		#refister default message packet callback on serial manager
-		#callback must have the folloing type 
-		#def cb1(data:bytes)
-	
-		self.registerLocalPacketHandlerCallback(100,self.__decodeMessagePacket__)
+        # Declare counter
+        self.counter = 0
 
-		
-	def run(self):
-		with socket.socket(socket.AF_INET,socket.SOCK_DGRAM) as self.sock:
-			self.__auto_connect__()
-			
-			while True:
-				try:
-					self.__checkSendQueue__()
-					self.__readPacket__()
-					self.__cleanupPacketRecord__()
-					time.sleep(0.001)
-				except (OSError, serial.SerialException):
-					self.__disconnect__()
-					self.__auto_connect__()
+        # Set receive queue timeout (default: 10 minutes)
+        self.receivedQueueTimeout = 10 * 60
 
-					
-		
-	def exitHandler(self,sig,frame):
-		self.__sm_log__("Serial Manager Exited")
-		self.__disconnect__()
-		sys.exit(0)
+        # Raise exception if the send and/or receive queue do not exist
+        if sendQ is None or receiveQ is None:
+            raise Exception(
+                "[Serial-Manager] - Error, no sendqueue or receivequeue passed, exiting"
+            )
 
-	def __auto_connect__(self):
-		while True:
-			try:
-				self.__connect__()
-				self.__sm_log__("Device " + self.device + " Connected")
-				break
-			except (OSError, serial.SerialException):
-				if self.autoreconnect:
-					self.__sm_log__('Device ' + self.device + ' Disconnected, retrying...')
-					time.sleep(1)
-					continue
-				else:
-					self.__sm_log__('Device ' + self.device + ' Disconnected, killing serial manager. Bye bye!')
-					self.exitHandler(None,None)
-	
-	def __disconnect__(self):
-		try:
-			self.ser.close()
-		except AttributeError:
-			pass
+        # Store send and receive queues
+        self.sendQ = sendQ
+        self.receiveQ = receiveQ
 
-	def __connect__(self):
-		boot_messages = ''
-		self.ser = serial.Serial(port=None, baudrate=self.baud, timeout = self.waittime)  # open serial port
-		self.ser.port = self.device
+        # Store UDP monitor
+        self.UDPMonitor = UDPMonitor
 
-		self.ser.stopbits = serial.STOPBITS_ONE
-		self.ser.parity = serial.PARITY_NONE
-		self.ser.bytesize = serial.EIGHTBITS
+        # Setup UDP monitor
+        if UDPMonitor:
+            self.UDPIp = UDPIp
+            self.UDPPort = UDPPort
 
-		self.ser.rts = False
-		self.ser.dtr = False
-		
-		self.ser.open()
+        # Declare local packet handler callbacks
+        self.localPacketHandlerCallbacks: Dict[int, Callable[[bytes], None]] = {}
 
-		self.ser.rts = True
-		self.ser.dtr = True
-		
-		#force esp32 reset
+        # Register default message packet callback
+        self.registerLocalPacketHandlerCallback(100, self.__decodeMessagePacket__)
 
-		self.ser.rts = False
-		time.sleep(0.005) #minimal EN delay from idf_monitor.py->constants.py
-		self.ser.rts = True
+    def run(self) -> None:
+        # Open socket
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as self.sock:
+            # Try to connect
+            self.__auto_connect__()
 
-		# self.ser.flushInput()
-		# self.ser.setDTR(True)
-		#self.__sm_log__('esp32 reset')
-		# self.ser.flushInput()
+            # Enter run loop
+            while True:
+                try:
+                    # Check send queue
+                    self.__checkSendQueue__()
 
-		#get boot messages after reboot
-		# while (self.ser.in_waiting):
-		# 	data = self.ser.read(1)
-		# 	try:
-		# 		boot_messages += data.decode("utf-8")
-		# 	except:
-		# 		boot_messages += str(data)
-		# # if self.verbose:
-		# self.__sm_log__(boot_messages)
+                    # Read packets
+                    self.__readPacket__()
 
-	def __readPacket__(self):
-		#cobs decode
-		while self.ser.in_waiting > 0:
-			incomming = self.ser.read(1)
-		
-			# try:
-			# 	print(incomming.decode('UTF-8'),end="")
-			# except:
-			# 	print(str(incomming),end="")
-			if self.verbose:
-				# self.__sm_log__(str(incomming))
-				try:
-					print(incomming.decode('UTF-8'),end="")
-				except:
-					print(str(incomming),end="")
+                    # Clean packet record
+                    self.__cleanupPacketRecord__()
 
-			if (incomming == (0x00).to_bytes(1,'little')):
-				if (len(self.receiveBuffer) == 0):
-					#empty frame receved, discard this
-					# return
-					break
-				try:
-					decodedData = cobs.decode(bytearray(self.receiveBuffer))
-					self.__processReceivedPacket__(decodedData)
-					self.__sendToUDP__(decodedData) 
-					# self.__sm_log__(decodedData)
-				except cobs.DecodeError as e:
-					self.__sm_log__("Decoded Error, the following data could not be decoded...")
-					print(e)
-					print(self.receiveBuffer)
-					
-				#empty receive buffer
-				self.receiveBuffer = []
-			else:
-				#place new byte at end of buffer
-				self.receiveBuffer += incomming
- 
-	def __processReceivedPacket__(self,data:bytes):
-		self.received_packet = True
+                except (OSError, serial.SerialException):
+                    # Disconnect serial device
+                    self.__disconnect__()
 
-		try:
-			header = RnpHeader.from_bytes(data)#decode header
-		except DeserializationError:
-			self.__sm_log__("Deserialization Error")
-			self.__sm_log__(str(data))
-			return
-		#check header len
-		
-		if (len(data) != (RnpHeader.size + header.packet_len)):
-			self.__sm_log__("Length Mismatch expected:" + str((RnpHeader.size + header.packet_len)) + " Received: " + str(len(data)))
-			self.__sm_log__(data.hex())
-			return
+                    # Attempt to reconnect
+                    self.__auto_connect__()
 
-		uid = header.uid #get unique id
-	
-		if uid in self.packetRecord:
-			#get client id from packetrecord and remove corresponding entry
-			identifier = self.packetRecord.pop(uid)[0]
+    def exitHandler(self, sig, frame) -> None:
+        # Log exit
+        self.__sm_log__("Serial Manager Exited")
 
-			try:
-				sendData = {'identifier':identifier,'type':'response','data':data}
-				self.receiveQ.put_nowait(sendData)
-			except Full:
-				self.__sm_log__('receive queue full, dumping packet!')
-				return
+        # Disconnect from serial device
+        self.__disconnect__()
 
+        # System exit
+        sys.exit(0)
 
-		else:
-			#handle packets addressed to the local packet handler on the backend
-			if (uid == 0) and (header.destination_service == 0):
-				self.localPacketHandlerCallbacks.get(header.packet_type,lambda: None)(data)
-				
-				return
+    def __auto_connect__(self) -> None:
+        # Enter connection loop
+        while True:
+            try:
+                # Attempt to connect
+                self.__connect__()
 
-			#unkown packet received -> dump packet ; might be worth spewing these into a file
-			self.__sm_log__("unkown packet recieved")
-			print(header)
-			return
+                # Log successful connection
+                self.__sm_log__(f"Device {self.device} Connected")
 
-			
-	def __sendPacket__(self,data:bytes,identifier:dict):
-		header = RnpHeader.from_bytes(data)#decode header
-		uid = self.__generateUID__() #get uuid
-		header.uid = uid #get uuid
-		serialized_header = header.serialize() #re-serialize header
-		modifieddata = bytearray(data)
-		modifieddata[:len(serialized_header)] = serialized_header
-		self.packetRecord[uid] = [identifier,time.time()] #update packetrecord dictionary
-		#self.sendBuffer.append(data)#add packet to send buffer
-		self.__sendToUDP__(modifieddata)  #send data to udp monitor
-		# cobs encode
-		encoded = bytearray(cobs.encode(modifieddata))
-		encoded += (0x00).to_bytes(1,'little') #add end packet marker
-		self.ser.write(encoded)#write packet to serial port and hope its free lol
-		
+                # Break loop as connection successful
+                break
+            except (OSError, serial.SerialException):
+                # Check reconnection flag
+                if self.autoreconnect:
+                    # Log attempt to reconnect
+                    self.__sm_log__(f"Device {self.device} Disconnected, retrying...")
 
-	def __checkSendQueue__(self):
-		if (time.time_ns()-self.prevSendTime > self.sendDelta):
-				self.__processSendQueue__()
-				self.prevSendTime = time.time_ns()
+                    # Sleep to reduce re-try rate
+                    time.sleep(1)
 
-	def __sm_log__(self,msg):
-		#serial maanger logger, will replace with something better than self.__sm_log__ in the future - famous last words
-		print('[Serial Manager] - ' + str(msg))	
-			
-	
-	def __processSendQueue__(self):
-		try:
-			#item is a json object with structure 
-			#{data:bytes as hex string,
-			# identifier:"{}"}
-			item = self.sendQ.get_nowait()
-			self.__sendPacket__(bytes.fromhex(item['data']),item['identifier'])
-			self.prevSendTime = time.time_ns()
-		except Empty:
-			return
-	
-		
+                    # Continue reconnection loop
+                    continue
+                else:
+                    # Log exit
+                    self.__sm_log__(
+                        f"Device {self.device} Disconnected, killing serial manager. Bye bye!"
+                    )
 
-	def __generateUID__(self):
-		#UID is a unsigend 16bit integer. UID 0 is reserved for forwarding to local so we want 
-		#strictly increasing integers in the range [1 65535]
-		self.counter = (self.counter%65535) + 1
-		return self.counter 
-			
-	def __cleanupPacketRecord__(self):
-		expiry_time = time.time() - self.packetRecordTimeout
-		
-		#use list to force python to copy items
-		for key,value in list(self.packetRecord.items()):
-			if value[1] < expiry_time:
-				self.packetRecord.pop(key) #remove entry
+                    # Exit
+                    self.exitHandler(None, None)
 
-	def __sendToUDP__(self,data:bytearray):
-		if (self.UDPMonitor):
-			self.sock.sendto(data,(self.UDPIp,self.UDPPort))
+    def __disconnect__(self):
+        try:
+            # Close serial connection
+            self.ser.close()
+        except AttributeError:
+            # No action
+            pass
 
-		
-	def registerLocalPacketHandlerCallback(self,packet_type:int,callback):
-		#will override any existing callbacks
-		self.localPacketHandlerCallbacks[packet_type] = callback
+    def __connect__(self) -> None:
+        # Create serial port
+        self.ser = serial.Serial(port=None, baudrate=self.baud, timeout=self.waittime)
 
-	def __decodeMessagePacket__(self,data:bytes):
-		header = RnpHeader.from_bytes(data)
-		packet_body = data[RnpHeader.size:]
-		try:
-			message:str = packet_body.decode('UTF-8') 
-		except:
-			message:str = str(packet_body)
-		if self.verbose:
-			self.__sm_log__("Message: " + message)
-		json_message = {"header" : vars(header),
-						"message": message}
-	
-		try:
-			json_message['type'] = "logmessage"
-			self.receiveQ.put_nowait(json_message)
-		except Full:
-			self.__sm_log__('receive Queue full, skipping message')
+        # Set serial port path
+        self.ser.port = self.device
 
+        # Set serial parameters
+        self.ser.stopbits = serial.STOPBITS_ONE
+        self.ser.parity = serial.PARITY_NONE
+        self.ser.bytesize = serial.EIGHTBITS
 
+        # Set RTS/DTR lines low
+        self.ser.rts = False
+        self.ser.dtr = False
 
-		
+        # Open serial port
+        self.ser.open()
+
+        # Set RTS/DTR lines high
+        self.ser.rts = True
+        self.ser.dtr = True
+
+        # Reset ESP32 by pulsing RTS line HIGH for 5 milliseconds
+        self.ser.rts = False
+        time.sleep(0.005)
+        self.ser.rts = True
+
+    def __readPacket__(self) -> None:
+        # Loop while data exists in the serial buffer
+        while self.ser.in_waiting > 0:
+            # Read the first byte in the serial buffer
+            incoming = self.ser.read(1)
+
+            # Print incoming byte
+            if self.verbose:
+                try:
+                    print(incoming.decode("UTF-8"), end="")
+                except:
+                    print(str(incoming), end="")
+
+            # TODO: clarify execution flow
+
+            # Check if the incoming byte is zeros
+            if incoming == (0x00).to_bytes(1, "little"):
+                # Discard empty frame
+                if len(self.receiveBuffer) == 0:
+                    break
+
+                # Try to decode the bytes in the receive buffer
+                try:
+                    # Decode bytes in receive buffer
+                    decodedData = cobs.decode(bytearray(self.receiveBuffer))
+
+                    # Processed decoded data
+                    self.__processReceivedPacket__(decodedData)
+
+                    # Send decoded packet to UDP
+                    self.__sendToUDP__(decodedData)
+                except cobs.DecodeError as e:
+                    # Print error if decode fails
+                    self.__sm_log__(
+                        "Decode Error, the following data could not be decoded..."
+                    )
+                    print(e)
+                    print(self.receiveBuffer)
+
+                # Empty receive buffer
+                self.receiveBuffer = []
+            else:
+                # Append byte to receive buffer
+                self.receiveBuffer += incoming
+
+    def __processReceivedPacket__(self, data: bytes) -> None:
+        # Set received packet flag
+        self.received_packet = True
+
+        # Try to deserialise the packet
+        try:
+            # Decode packet header
+            header = RnpHeader.from_bytes(data)
+        except DeserializationError:
+            # Log deserialisation error
+            self.__sm_log__("Deserialisation Error")
+            self.__sm_log__(str(data))
+            return
+
+        # Check for packet length consistency
+        if len(data) != (RnpHeader.size + header.packet_len):
+            # Log packet length discrepancy
+            self.__sm_log__(
+                "Length Mismatch expected:"
+                + str((RnpHeader.size + header.packet_len))
+                + " Received: "
+                + str(len(data))
+            )
+            self.__sm_log__(data.hex())
+            return
+
+        # Extract UID from packet header
+        uid = header.uid
+
+        # Check if the UID is in the packet record
+        if uid in self.packetRecord:
+            # Get client ID from the packet record and remove the corresponding entry
+            identifier: str = self.packetRecord.pop(uid)[0]
+
+            # Try to put the packet on the receive queue
+            try:
+                sendData = {"identifier": identifier, "type": "response", "data": data}
+                self.receiveQ.put_nowait(sendData)
+            except Full:
+                # Log full receive queue and dump the packet
+                self.__sm_log__("Receive queue full, dumping packet!")
+                return
+        else:
+            # Check for packets addressed to the local packet handler
+            if (uid == 0) and (header.destination_service == 0):
+                # Get local packet handler callback (if it exists)
+                callback = self.localPacketHandlerCallbacks.get(
+                    header.packet_type, lambda x: None
+                )
+
+                # Call local packet handler callback
+                callback(data)
+
+                return
+
+            # Log unknown packet received and dump the packet
+            # TODO: log the packet itself?
+            self.__sm_log__("Unknown packet recieved")
+            print(header)
+            return
+
+    def __sendPacket__(self, data: bytes, identifier: dict) -> None:
+        # Decode packet header
+        header = RnpHeader.from_bytes(data)
+
+        # Generate packet UID
+        uid = self.__generateUID__()
+
+        # Set packet UID
+        header.uid = uid
+
+        # Re-serialise the packet header
+        serialized_header = header.serialize()
+
+        # Create packet byte array
+        modifieddata = bytearray(data)
+
+        # Update header in packet byte array
+        modifieddata[: len(serialized_header)] = serialized_header
+
+        # Update packet record
+        self.packetRecord[uid] = [
+            identifier,
+            time.time(),
+        ]
+
+        # Send packet byte array to the UDP monitor
+        self.__sendToUDP__(modifieddata)  # send data to udp monitor
+
+        # Encode packet
+        encoded = bytearray(cobs.encode(modifieddata))
+
+        # Add packet end marker
+        encoded += (0x00).to_bytes(1, "little")  # add end packet marker
+
+        # Write packet to the serial connection
+        # TODO: check serial port is free?
+        self.ser.write(encoded)
+
+    def __checkSendQueue__(self) -> None:
+        # Check if time since last send exceeds the send delta
+        if time.time_ns() - self.prevSendTime > self.sendDelta:
+            # Process the send queue
+            self.__processSendQueue__()
+
+            # Update previous send time
+            # TODO: clarify repeat in __processSendQueue__
+            self.prevSendTime = time.time_ns()
+
+    def __sm_log__(self, msg) -> None:
+        # Print log message
+        # TODO: replace with better logger?
+        print("[Serial Manager] - " + str(msg))
+
+    def __processSendQueue__(self) -> None:
+        # Try to send data waiting in key
+        try:
+            # Get packet from send queue
+            item = self.sendQ.get_nowait()
+
+            # Send packet
+            self.__sendPacket__(bytes.fromhex(item["data"]), item["identifier"])
+
+            # Update previous send time
+            # TODO: clarify repeat in __checkSendQueue__
+            self.prevSendTime = time.time_ns()
+        except Empty:
+            # Return on empty send queue
+            return
+
+    def __generateUID__(self) -> int:
+        # Increment the counter, ensuring it remains in the range [1 65535]:
+        # - UIDs are unsigned 16-bit integers
+        # - UID 0 is reserved for local forwarding
+        self.counter = (self.counter % 65535) + 1
+
+        # Return counter value
+        return self.counter
+
+    def __cleanupPacketRecord__(self) -> None:
+        # Calculate packet expiry time
+        expiry_time = time.time() - self.packetRecordTimeout
+
+        # Iterate through the packet record, using list to force Python to copy the items
+        for key, value in list(self.packetRecord.items()):
+            # Remove entry from the packet record if it has expired
+            if value[1] < expiry_time:
+                self.packetRecord.pop(key)
+
+    def __sendToUDP__(self, data: bytes) -> None:
+        # Send packet to UDP monitor
+        if self.UDPMonitor:
+            self.sock.sendto(data, (self.UDPIp, self.UDPPort))
+
+    def registerLocalPacketHandlerCallback(self, packet_type: int, callback):
+        # Update callback
+        # NOTE: any existing callbacks will be overrided
+        self.localPacketHandlerCallbacks[packet_type] = callback
+
+    def __decodeMessagePacket__(self, data: bytes) -> None:
+        # Extract packet header
+        header = RnpHeader.from_bytes(data)
+
+        # Extract packet payload
+        packet_body = data[RnpHeader.size :]
+
+        # Decode packet payload
+        try:
+            message = packet_body.decode("UTF-8")
+        except:
+            message = str(packet_body)
+
+        # Log packet payload
+        if self.verbose:
+            self.__sm_log__("Message: " + message)
+
+        # Generate packet payload dictionary
+        json_message = {
+            "header": vars(header),
+            "message": message,
+            "type": "logmessage",
+        }
+
+        # Try to put the decoded packet on the receive queue
+        try:
+            self.receiveQ.put_nowait(json_message)
+        except Full:
+            # Log full receive queue
+            self.__sm_log__("Receive Queue full, skipping message")
