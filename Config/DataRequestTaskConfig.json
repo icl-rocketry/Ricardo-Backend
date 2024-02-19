@@ -18,6 +18,7 @@
    "fuelAngle": "uint16_t",
    "oxAngle": "uint16_t",
    "thanosState": "uint8_t",
+   "oDrvState": "uint8_t",
    "system_status": "uint32_t",
    "system_time": "uint64_t"
   },
@@ -54,7 +55,37 @@
      },
      {
       "id": 4,
-      "description": "THROTTLE_THRUST"
+      "description": "TVCCIRCLE"
+     },
+     {
+      "id": 6,
+      "description": "DEBUG"
+     }
+    ]
+   },
+   {
+    "variable_name": "oDrv_state",
+    "bitfield": "oDrvState",
+    "flags": [
+     {
+      "id": 0,
+      "description": "IDLE"
+     },
+     {
+      "id": 1,
+      "description": "ARMED"
+     },
+     {
+      "id": 2,
+      "description": "LOCKED"
+     },
+     {
+      "id": 3,
+      "description": "HOTFIRE"
+     },
+     {
+      "id": 4,
+      "description": "CALIBRATION"
      },
      {
       "id": 5,
@@ -63,16 +94,16 @@
     ]
    }
   ],
-  "rxCounter": 23,
-  "txCounter": 26,
+  "rxCounter": 774,
+  "txCounter": 775,
   "connected": true,
-  "lastReceivedPacket": "af15004e0102006766010200000000000000000401000000c745000000000000"
+  "lastReceivedPacket": "af1600c71302006766010100000000000000004008010000000108140000000000"
  },
  {
   "task_name": "act1_telemetry",
   "autostart": false,
   "poll_delta": 500,
-  "running": true,
+  "running": false,
   "logger": true,
   "receiveOnly": false,
   "request_config": {
@@ -99,16 +130,16 @@
     ]
    }
   ],
-  "rxCounter": 25,
-  "txCounter": 25,
+  "rxCounter": 0,
+  "txCounter": 0,
   "connected": true,
-  "lastReceivedPacket": "af10007e010200676701020000000001040000658e000000000000"
+  "lastReceivedPacket": ""
  },
  {
   "task_name": "act2_telemetry",
   "autostart": false,
   "poll_delta": 500,
-  "running": true,
+  "running": false,
   "logger": true,
   "receiveOnly": false,
   "request_config": {
@@ -135,16 +166,16 @@
     ]
    }
   ],
-  "rxCounter": 24,
-  "txCounter": 24,
+  "rxCounter": 0,
+  "txCounter": 0,
   "connected": true,
-  "lastReceivedPacket": "af100078010200676801020000000001040000ea8d000000000000"
+  "lastReceivedPacket": ""
  },
  {
   "task_name": "fuelventsrv_telemetry",
   "autostart": false,
   "poll_delta": 500,
-  "running": true,
+  "running": false,
   "logger": true,
   "receiveOnly": false,
   "request_config": {
@@ -194,16 +225,16 @@
     ]
    }
   ],
-  "rxCounter": 24,
-  "txCounter": 24,
+  "rxCounter": 0,
+  "txCounter": 0,
   "connected": true,
-  "lastReceivedPacket": "af06008f010a0001680102020000000000"
+  "lastReceivedPacket": ""
  },
  {
   "task_name": "n2fillsrv_telemetry",
   "autostart": false,
   "poll_delta": 500,
-  "running": true,
+  "running": false,
   "logger": true,
   "receiveOnly": false,
   "request_config": {
@@ -253,16 +284,16 @@
     ]
    }
   ],
-  "rxCounter": 16,
-  "txCounter": 16,
+  "rxCounter": 0,
+  "txCounter": 0,
   "connected": true,
-  "lastReceivedPacket": "af060087010b0001680102020000000000"
+  "lastReceivedPacket": ""
  },
  {
   "task_name": "oxfillsrv_telemetry",
   "autostart": false,
   "poll_delta": 500,
-  "running": true,
+  "running": false,
   "logger": true,
   "receiveOnly": false,
   "request_config": {
@@ -312,16 +343,16 @@
     ]
    }
   ],
-  "rxCounter": 21,
-  "txCounter": 21,
+  "rxCounter": 0,
+  "txCounter": 0,
   "connected": true,
-  "lastReceivedPacket": "af06008d010a0001670102020000000000"
+  "lastReceivedPacket": ""
  },
  {
   "task_name": "oxventsrv_telemetry",
   "autostart": false,
   "poll_delta": 500,
-  "running": true,
+  "running": false,
   "logger": true,
   "receiveOnly": false,
   "request_config": {
@@ -371,16 +402,16 @@
     ]
    }
   ],
-  "rxCounter": 19,
-  "txCounter": 19,
+  "rxCounter": 0,
+  "txCounter": 0,
   "connected": true,
-  "lastReceivedPacket": "af06008b010b0001670102020000000000"
+  "lastReceivedPacket": ""
  },
  {
   "task_name": "pdu0_telemetry",
   "autostart": false,
   "poll_delta": 500,
-  "running": true,
+  "running": false,
   "logger": true,
   "receiveOnly": false,
   "request_config": {
@@ -416,16 +447,16 @@
     ]
    }
   ],
-  "rxCounter": 18,
-  "txCounter": 18,
+  "rxCounter": 0,
+  "txCounter": 0,
   "connected": true,
-  "lastReceivedPacket": "af10008801020066690102e50cc14401040000a090000000000000"
+  "lastReceivedPacket": ""
  },
  {
   "task_name": "pyreng_telemetry",
   "autostart": false,
   "poll_delta": 200,
-  "running": true,
+  "running": false,
   "logger": true,
   "receiveOnly": false,
   "request_config": {
@@ -475,16 +506,16 @@
     ]
    }
   ],
-  "rxCounter": 33,
-  "txCounter": 34,
+  "rxCounter": 0,
+  "txCounter": 0,
   "connected": true,
-  "lastReceivedPacket": "af060084010c00016b01020a0000000000"
+  "lastReceivedPacket": ""
  },
  {
   "task_name": "sen0_telemetry",
   "autostart": false,
   "poll_delta": 20,
-  "running": true,
+  "running": false,
   "logger": true,
   "receiveOnly": false,
   "request_config": {
@@ -526,10 +557,10 @@
     ]
    }
   ],
-  "rxCounter": 180,
-  "txCounter": 183,
+  "rxCounter": 0,
+  "txCounter": 0,
   "connected": true,
-  "lastReceivedPacket": "af4c008e010200676a01016c3193c200e0d3445e5c2cc154dff8c000b8e1c500e0b64471029d44a6bd37c3ef6a55c160f65bc1df5861c100c024c7cd749242cd74924200000000cd749242010000008455000000000000"
+  "lastReceivedPacket": ""
  },
  {
   "task_name": "thanos_telemetry",
@@ -585,10 +616,10 @@
     ]
    }
   ],
-  "rxCounter": 11,
-  "txCounter": 13,
+  "rxCounter": 2508,
+  "txCounter": 2508,
   "connected": true,
-  "lastReceivedPacket": "af060048010a0001660102020000000000"
+  "lastReceivedPacket": "af0600c8130a0001660101010000000000"
  },
  {
   "task_name": "senraw0_telemetry",
