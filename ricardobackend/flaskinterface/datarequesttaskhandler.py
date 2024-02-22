@@ -41,7 +41,7 @@ class DataRequestTask():
 
         os.makedirs(os.path.dirname(self.fileName), exist_ok=True)
 
-        self.logfile = open(self.fileName,'x',newline='')
+        self.logfile = open(self.fileName,'a',newline='')
 
         logfile_header = ["BackendTime"] + self.packet_class().packetvars
         self.csv_writer = csv.DictWriter(self.logfile,fieldnames=logfile_header)
@@ -113,6 +113,7 @@ class DataRequestTask():
         if self.config['logger']:
             data_row = {"BackendTime":time.time()*1000,**deserialized_packet.getData()}
             self.csv_writer.writerow(data_row)
+            # self.logfile.flush() 
         
         packetData = deserialized_packet.getData()
         #decode bitfields if there are any
@@ -301,6 +302,7 @@ class DataRequestTaskHandler():
 
 
     def __exitHandler__(self,sig=None,frame=None):
+        [task.__exit__() for task in self.task_container.values()] 
         self.run=False
         sys.exit(0)
 
