@@ -28,6 +28,9 @@ ap.add_argument('-mon','--monitor', required=False, help="Enable network monitor
 ap.add_argument('-monip','--monitor-ip', required=False, help="Set network monitoring ip",type=str,default = "127.0.0.1")
 ap.add_argument('-monport','--monitor-port', required=False, help="Set network monitoring port",type=int,default = 7000)
 
+ap.add_argument('--config_dir',required=False, help="Backend Config location", type=str,default = "Config/")
+ap.add_argument('--logs_dir',required=False, help="Backend Logfile location", type=str,default = "Logs/")
+
 ap.add_argument("-v", "--verbose", required=False, help="Enable Verbose Mode", action='store_true')
 ap.add_argument('--fake_data',required=False, help="serve fake data",action='store_true',default=False)
 
@@ -73,7 +76,9 @@ def startFlaskInterface(args,sendQueue,receiveQueue):
                                        fake_data=args['fake_data'],
                                        verbose=args['verbose'],
                                        sendQueue=sendQueue,
-                                       receiveQueue=receiveQueue)
+                                       receiveQueue=receiveQueue,
+                                       config_dir=args['config_dir'],
+                                       logs_dir=args['logs_dir'])
 
 
 if __name__ == '__main__':

@@ -24,7 +24,7 @@ import eventlet
 
 MS_TO_NS = 1e6
 class DataRequestTask():
-    def __init__(self,jsonconfig):
+    def __init__(self,jsonconfig,logs_dir:str):
         
         self.config = None
 
@@ -37,7 +37,7 @@ class DataRequestTask():
         self.lastReceivedTime = 0
 
         
-        self.fileName = "Logs/"+self.config['task_name']+"_"+datetime.now().strftime("%d_%m_%y_%H_%M_%S_%f")+'.csv'
+        self.fileName = logs_dir+self.config['task_name']+"_"+datetime.now().strftime("%d_%m_%y_%H_%M_%S_%f")+'.csv'
 
         os.makedirs(os.path.dirname(self.fileName), exist_ok=True)
 
@@ -143,7 +143,7 @@ class DataRequestTask():
 class DataRequestTaskHandler():
 
 
-    def __init__(self,sio_instance,sendQ=None,receiveQ = None,prefix:str = "flaskinterface",verbose:bool=False):
+    def __init__(self,sio_instance,config_dir:str,logs_dir:str,sendQ=None,receiveQ = None,prefix:str = "flaskinterface",verbose:bool=False):
         # self.r = redis.Redis(redishost,redisport)
         if sendQ is None or receiveQ is None:
             raise Exception('No send queue or receive queue provided')
@@ -153,7 +153,8 @@ class DataRequestTaskHandler():
 
         self.identifier = {"prefix":prefix,"process_id":'DTRH'}
 
-        self.config_filename = 'Config/DataRequestTaskConfig.json'
+        self.config_filename = config_dir + 'DataRequestTaskConfig.json'
+        self.logs_dir = logs_dir
         
         self.task_container = {} #{task_name:task_object}
 
@@ -186,7 +187,7 @@ class DataRequestTaskHandler():
         """Adds a new task to the config to reques new data"""
         #if already exists, delete old task and spin up new one
         task_id = data["task_name"]
-        self.task_container[task_id] = DataRequestTask(data)
+        self.task_container[task_id] = DataRequestTask(data,self.logs_dir)
 
 
   
