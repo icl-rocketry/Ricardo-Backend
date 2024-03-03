@@ -72,16 +72,14 @@ class SerialManager():
 					self.__cleanupPacketRecord__()
 					time.sleep(0.001)
 				except (OSError, serial.SerialException):
+					self.__disconnect__()
 					self.__auto_connect__()
 
 					
 		
 	def exitHandler(self,sig,frame):
 		self.__sm_log__("Serial Manager Exited")
-		try:
-			self.ser.close() #close serial port
-		except AttributeError:
-			pass
+		self.__disconnect__()
 		sys.exit(0)
 
 	def __auto_connect__(self):
@@ -98,7 +96,13 @@ class SerialManager():
 				else:
 					self.__sm_log__('Device ' + self.device + ' Disconnected, killing serial manager. Bye bye!')
 					self.exitHandler(None,None)
-			
+	
+	def __disconnect__(self):
+		try:
+			self.ser.close()
+		except AttributeError:
+			pass
+
 	def __connect__(self):
 		boot_messages = ''
 		self.ser = serial.Serial(port=None, baudrate=self.baud, timeout = self.waittime)  # open serial port
