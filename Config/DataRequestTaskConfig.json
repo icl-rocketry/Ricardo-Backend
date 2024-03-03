@@ -2,13 +2,13 @@
  {
   "task_name": "fc_telemetry",
   "autostart": false,
-  "poll_delta": 500,
+  "poll_delta": 50,
   "running": false,
   "logger": false,
   "receiveOnly": false,
   "request_config": {
    "source": 1,
-   "destination": 2,
+   "destination": 0,
    "destination_service": 2,
    "command_id": 8,
    "command_arg": 0
@@ -282,7 +282,7 @@
  {
   "task_name": "freeram",
   "autostart": false,
-  "poll_delta": 50,
+  "poll_delta": 20,
   "running": false,
   "logger": true,
   "receiveOnly": false,
@@ -616,7 +616,7 @@
   "receiveOnly": false,
   "request_config": {
    "source": 1,
-   "destination": 17,
+   "destination": 0,
    "destination_service": 10,
    "command_id": 1,
    "command_arg": 0
@@ -675,8 +675,8 @@
   "receiveOnly": false,
   "request_config": {
    "source": 1,
-   "destination": 11,
-   "destination_service": 10,
+   "destination": 0,
+   "destination_service": 11,
    "command_id": 1,
    "command_arg": 0
   },
@@ -997,7 +997,7 @@
   "receiveOnly": false,
   "request_config": {
    "source": 1,
-   "destination": 9,
+   "destination": 0,
    "destination_service": 10,
    "command_id": 1,
    "command_arg": 0
@@ -1056,8 +1056,8 @@
   "receiveOnly": false,
   "request_config": {
    "source": 1,
-   "destination": 7,
-   "destination_service": 10,
+   "destination": 0,
+   "destination_service": 11,
    "command_id": 1,
    "command_arg": 0
   },
