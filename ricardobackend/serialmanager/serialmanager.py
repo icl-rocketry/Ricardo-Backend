@@ -71,7 +71,8 @@ class SerialManager():
 					self.__readPacket__()
 					self.__cleanupPacketRecord__()
 					time.sleep(0.001)
-				except (OSError, serial.SerialException):
+				except (OSError, serial.SerialException) as e:
+					print(e)
 					self.__disconnect__()
 					self.__auto_connect__()
 
