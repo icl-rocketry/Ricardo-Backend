@@ -15,8 +15,8 @@ import logging
 # logger = logging.getLogger('websockets')
 # logger.setLevel(logging.DEBUG)
 # logger.addHandler(logging.StreamHandler())
-.getLogger("asyncio").setLevel(logging.INFO)
-logging.getLogger("asyncio").addHandler(logging.StreamHandler())
+#logging.getLogger("asyncio").setLevel(logging.INFO)
+#logging.getLogger("asyncio").addHandler(logging.StreamHandler())
 
 MS_TO_NS = 1e6
 NS_TO_MS = 1e-6

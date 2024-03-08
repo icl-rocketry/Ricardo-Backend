@@ -5,6 +5,7 @@ from flask import Flask, request, render_template
 from flask_socketio import SocketIO, emit, send # added emit from flask_socketio
 import multiprocessing as mp
 import queue as q
+import time
 
 
 from .taskhandler_webui import taskhandler_webui_bp
@@ -114,10 +115,14 @@ def connect_telemetry():
 def dtrh_connect():
     pass
 
-@socketio.on('connect',namespace='/messages')
-def message_connect():
+@socketio.on('connect',namespace='/system_events')
+def system_events_connect():
     pass
 
+@socketio.on('forward_event',namespace='/system_events')
+def forward_system_event():
+    
+    pass
 
 @socketio.on('connect', namespace='/')
 def connect():
@@ -200,12 +205,24 @@ def __RESTAPIResponseHandler__(item):
         rest_response_list[clientid].put_nowait(item)
    
     
-    
-
 #socket io message queue task
 def __SocketIOMessageHandler__(message:dict):
     socketio.emit("new_message",message,namespace="/messages")
 
+def __SystemEventHandler__(event:dict):
+    '''
+    {
+    "SystemEvent":
+        {
+            "level":"", // info critical debug error warn
+            "name":"", //Ignition Command, Rocket Log, TVCArm Command
+            "msg":"", 
+            "time":"",
+            "sender":""// - string?, ip addres? 
+        }
+    }
+    '''
+    socketio.emit("new_event",event,namespace="/system_events")
 
 # dummy signal
 def __DummySignalBroadcastTask__(verbose=False):
@@ -234,7 +251,7 @@ def __FlaskInterfaceResponseHandler__(receiveQ:mp.Queue,dtrh_receiveQ:mp.Queue):
                 try:
                     identifier:dict = item['identifier'] 
                 except KeyError:
-                    print('[Flask-Interface]: identifier key not found in item')
+                    print('[Flask-Interface]: identifier key not found in item') #TODO Log
                     continue
                 #identifier will be a dict which structure depends on the prticular applicaiton 
                 #for the flask interface we expct somethign like this
@@ -242,7 +259,7 @@ def __FlaskInterfaceResponseHandler__(receiveQ:mp.Queue,dtrh_receiveQ:mp.Queue):
                 #we want the process_id here to figure out how to distributed
                 #to the sub applkication tasks i.e data task request handler and rest apis etcc
                 try:
-                     process_identifier:str = identifier['process_id']
+                     process_identifier:str = identifier['process_id'] #TODO Log
                 except KeyError:
                     print('[Flask-Interface]: process_id key not found in item')
                     continue
@@ -268,10 +285,18 @@ def __FlaskInterfaceResponseHandler__(receiveQ:mp.Queue,dtrh_receiveQ:mp.Queue):
                 #Log message data wil have a dict of the following form
                 #{"header":header_vars:dict,"message":str}
                 item.pop('type') #remove type field from item
-                __SocketIOMessageHandler__(item)
+                # __SocketIOMessageHandler__(item)
+                #format event correctly
+                event = {
+                    "level":"info",
+                    "name":"Rocket Log",
+                    "msg":item["message"],
+                    "time":time.time_ns()*(1e-6) #conversion to milliseconds?? idk
+                }
+                __SystemEventHandler__(event)
         except Empty:
             pass
-        eventlet.sleep(0.001)
+        eventlet.sleep(0.001)#need to busy wait here as eventlet not compatible
 
 
     

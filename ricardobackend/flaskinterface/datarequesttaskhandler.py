@@ -264,6 +264,7 @@ class DataRequestTaskHandler():
             return
         #publish to socketio
         #use simplejson to dump json as string so that NaNs are converted to null
+        #TODO maybe append timestamp here rather than websocket forwarder?
         self.sio.emit(task_id,simplejson.dumps(decodedData,ignore_nan=True),namespace='/telemetry')
         #publish to redis depreceated
 

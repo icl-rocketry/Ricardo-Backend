@@ -9,13 +9,16 @@ import sys
 import socket
 import multiprocessing as mp
 from queue import Full, Empty
+import logging
+import logging.handlers
 
 
 class SerialManager():
 
-	def __init__(self, device, baud=115200, autoreconnect=True, waittime = .3,sendQ = None,receiveQ = None,verbose=False,UDPMonitor=False,UDPIp='127.0.0.1',UDPPort=7000):
+	def __init__(self, device, baud=115200, autoreconnect=True, waittime = .3,sendQ = None,receiveQ = None, logQ = None, verbose=False,UDPMonitor=False,UDPIp='127.0.0.1',UDPPort=7000):
 		signal.signal(signal.SIGINT,self.exitHandler)
 		signal.signal(signal.SIGTERM,self.exitHandler)
+
 		self.device = device
 		self.baud = baud
 		self.autoreconnect = autoreconnect
@@ -23,12 +26,10 @@ class SerialManager():
 		
 		self.prevSendTime = 0
 
-		 
 		self.sendDelta = 1e4
 
 		self.verbose = verbose
 		
-
 		self.packetRecordTimeout = 2*60 #default 2 minute timeout
 		self.messageQueueSize = 5000
 		self.receiveBuffer = []
@@ -42,8 +43,7 @@ class SerialManager():
 			raise Exception('[Serial-Manager] - Error, no sendqueue or receivequeue passed, exiting')
 
 		self.sendQ:mp.Queue = sendQ
-		# self.receiveQ_dict:dict = receiveQ_dict #{"prefix1":mp.Queue,"prefix2":mp.Queue}...
-		self.receiveQ:dict = receiveQ
+		self.receiveQ:mp.Queue = receiveQ
 
 		self.UDPMonitor = UDPMonitor
 		self.sock = None
@@ -60,12 +60,18 @@ class SerialManager():
 	
 		self.registerLocalPacketHandlerCallback(100,self.__decodeMessagePacket__)
 
+		queue_handler = logging.handlers.QueueHandler(logQ)
+		self.logger = logging.getLogger("system")
+		self.logger.addHandler(queue_handler)
+		self.logger.setLevel(logging.INFO)
+
+
 		
 	def run(self):
 		with socket.socket(socket.AF_INET,socket.SOCK_DGRAM) as self.sock:
-			self.__auto_connect__()
+			self.__auto_connect__() #TODO: can rewrite this logic a little
 			
-			while True:
+			while True: #TODO: change this to while on a flag or something
 				try:
 					self.__checkSendQueue__()
 					self.__readPacket__()
@@ -107,7 +113,7 @@ class SerialManager():
 		except AttributeError:
 			pass
 
-	def __connect__(self):
+	def __connect__(self): #TODO: serial in out logging
 		boot_messages = ''
 		self.ser = serial.Serial(port=None, baudrate=self.baud, timeout = self.waittime)  # open serial port
 		self.ser.port = self.device
@@ -130,30 +136,11 @@ class SerialManager():
 		time.sleep(0.005) #minimal EN delay from idf_monitor.py->constants.py
 		self.ser.rts = True
 
-		# self.ser.flushInput()
-		# self.ser.setDTR(True)
-		#self.__sm_log__('esp32 reset')
-		# self.ser.flushInput()
-
-		#get boot messages after reboot
-		# while (self.ser.in_waiting):
-		# 	data = self.ser.read(1)
-		# 	try:
-		# 		boot_messages += data.decode("utf-8")
-		# 	except:
-		# 		boot_messages += str(data)
-		# # if self.verbose:
-		# self.__sm_log__(boot_messages)
-
 	def __readPacket__(self):
 		#cobs decode
 		while self.ser.in_waiting > 0:
 			incomming = self.ser.read(1)
 		
-			# try:
-			# 	print(incomming.decode('UTF-8'),end="")
-			# except:
-			# 	print(str(incomming),end="")
 			if self.verbose:
 				# self.__sm_log__(str(incomming))
 				try:
@@ -221,7 +208,7 @@ class SerialManager():
 
 			#unkown packet received -> dump packet ; might be worth spewing these into a file
 			self.__sm_log__("unkown packet recieved")
-			print(header)
+			print(header)#TODO logging
 			return
 
 			
@@ -238,37 +225,32 @@ class SerialManager():
 		# cobs encode
 		encoded = bytearray(cobs.encode(modifieddata))
 		encoded += (0x00).to_bytes(1,'little') #add end packet marker
-		# try:
-		# 	self.ser.write(encoded)#write packet to serial port and hope its free lol
-		# except serial.SerialTimeoutException:
-		# 	self.__sm_log__("write timeout, dumping packet")
-		# 	pass
 		self.ser.write(encoded)#write packet to serial port and hope its free lol
 		
-
-	def __checkSendQueue__(self):
+	def __checkSendQueue__(self): #TODO ? 
 		if (time.time_ns()-self.prevSendTime > self.sendDelta):
 				self.__processSendQueue__()
 				self.prevSendTime = time.time_ns()
 
 	def __sm_log__(self,msg):
 		#serial maanger logger, will replace with something better than self.__sm_log__ in the future - famous last words
-		print('[Serial Manager] - ' + str(msg))	
+		#print('[Serial Manager] - ' + str(msg))
+		message = '[Serial Manager] - ' + str(msg)
+		self.logger.log(logging.CRITICAL, message)
+		
 			
-	
 	def __processSendQueue__(self):
 		try:
 			#item is a json object with structure 
 			#{data:bytes as hex string,
 			# identifier:"{}"}
-			item = self.sendQ.get_nowait()
+			item = self.sendQ.get_nowait() #TODO blocking api instead
 			self.__sendPacket__(bytes.fromhex(item['data']),item['identifier'])
 			self.prevSendTime = time.time_ns()
 		except Empty:
+			#TODO log send queue full
 			return
 	
-		
-
 	def __generateUID__(self):
 		#UID is a unsigend 16bit integer. UID 0 is reserved for forwarding to local so we want 
 		#strictly increasing integers in the range [1 65535]
@@ -287,7 +269,6 @@ class SerialManager():
 		if (self.UDPMonitor):
 			self.sock.sendto(data,(self.UDPIp,self.UDPPort))
 
-		
 	def registerLocalPacketHandlerCallback(self,packet_type:int,callback):
 		#will override any existing callbacks
 		self.localPacketHandlerCallbacks[packet_type] = callback

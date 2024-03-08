@@ -3,6 +3,10 @@ import argparse
 import sys
 import time
 import signal
+import logging
+import logging.handlers
+import os
+from datetime import datetime
 
 from ricardobackend.flaskinterface import flaskinterface
 from ricardobackend.serialmanager import serialmanager
@@ -50,7 +54,7 @@ def exitBackend(sig,frame):
 
     sys.exit(0)
 
-def startSerialManager(args,sendQueue,receiveQueue):
+def startSerialManager(args,sendQueue,receiveQueue,logQueue):
 
     serman = serialmanager.SerialManager(device = args["device"],
                                      baud = args["baud"],
@@ -60,7 +64,8 @@ def startSerialManager(args,sendQueue,receiveQueue):
                                      UDPPort=args["monitor_port"],
                                      verbose=args['verbose'],
                                      sendQ=sendQueue,
-                                     receiveQ=receiveQueue)
+                                     receiveQ=receiveQueue,
+                                     logQ=logQueue)
     serman.run()
 
 def startWebSocketForwarder(args):
@@ -80,11 +85,50 @@ def startFlaskInterface(args,sendQueue,receiveQueue):
                                        config_dir=args['config_dir'],
                                        logs_dir=args['logs_dir'])
 
+def listener_configurer(args):
+    logger = logging.getLogger("system")
+
+    formatter = logging.Formatter('%(asctime)s - %(message)s')
+
+
+
+    filename = datetime.now().strftime("%d_%m_%y_%H_%M_%S_%f") + ".log"
+    path = os.path.join(args['logs_dir'], "system")
+    os.makedirs(path, exist_ok=True)
+    file_path = os.path.join(path, filename)
+    file_handler = logging.FileHandler(file_path, "a")
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setFormatter(formatter)
+    logger.addHandler(stream_handler)
+
+
+def listener_process(args,queue, configurer):
+    configurer(args)
+    while True:
+        try:
+            record = queue.get()
+            if record is None:
+                break
+            logger = logging.getLogger("system")
+            logger.handle(record)
+        except Exception:
+            import sys, traceback
+            print('Problem:', file=sys.stderr)
+            traceback.print_exc(file=sys.stderr)
+
 
 if __name__ == '__main__':
 
     signal.signal(signal.SIGINT,exitBackend)
     signal.signal(signal.SIGTERM,exitBackend)
+
+    logQueue = multiprocessing.Queue(-1) #TODO idk - chnage to some reasonable limit
+    proclist['listener'] = multiprocessing.Process(target=listener_process,
+                                       args=(argsin, logQueue, listener_configurer))
+    proclist['listener'].start()
 
     
     sendQueue = multiprocessing.Queue()
@@ -94,7 +138,7 @@ if __name__ == '__main__':
     if not (argsin['fake_data']):
         if argsin.get('device',None) is None:
             raise Exception("No device passed")
-        proclist['serialmanager'] = multiprocessing.Process(target=startSerialManager,args=(argsin,sendQueue,receiveQueue,))
+        proclist['serialmanager'] = multiprocessing.Process(target=startSerialManager,args=(argsin,sendQueue,receiveQueue,logQueue))
         proclist['serialmanager'].start()
 
     #start flask interface process
