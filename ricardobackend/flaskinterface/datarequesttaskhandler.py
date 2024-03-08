@@ -24,7 +24,7 @@ import eventlet
 
 MS_TO_NS = 1e6
 class DataRequestTask():
-    def __init__(self,jsonconfig):
+    def __init__(self,jsonconfig,logs_dir:str):
         
         self.config = None
 
@@ -37,11 +37,11 @@ class DataRequestTask():
         self.lastReceivedTime = 0
 
         
-        self.fileName = "Logs/"+self.config['task_name']+"_"+datetime.now().strftime("%d_%m_%y_%H_%M_%S_%f")+'.csv'
+        self.fileName = logs_dir+self.config['task_name']+"_"+datetime.now().strftime("%d_%m_%y_%H_%M_%S_%f")+'.csv'
 
         os.makedirs(os.path.dirname(self.fileName), exist_ok=True)
 
-        self.logfile = open(self.fileName,'x')
+        self.logfile = open(self.fileName,'a',newline='')
 
         logfile_header = ["BackendTime"] + self.packet_class().packetvars
         self.csv_writer = csv.DictWriter(self.logfile,fieldnames=logfile_header)
@@ -113,6 +113,7 @@ class DataRequestTask():
         if self.config['logger']:
             data_row = {"BackendTime":time.time()*1000,**deserialized_packet.getData()}
             self.csv_writer.writerow(data_row)
+            # self.logfile.flush() 
         
         packetData = deserialized_packet.getData()
         #decode bitfields if there are any
@@ -142,7 +143,7 @@ class DataRequestTask():
 class DataRequestTaskHandler():
 
 
-    def __init__(self,sio_instance,sendQ=None,receiveQ = None,prefix:str = "flaskinterface",verbose:bool=False):
+    def __init__(self,sio_instance,config_dir:str,logs_dir:str,sendQ=None,receiveQ = None,prefix:str = "flaskinterface",verbose:bool=False):
         # self.r = redis.Redis(redishost,redisport)
         if sendQ is None or receiveQ is None:
             raise Exception('No send queue or receive queue provided')
@@ -152,7 +153,8 @@ class DataRequestTaskHandler():
 
         self.identifier = {"prefix":prefix,"process_id":'DTRH'}
 
-        self.config_filename = 'Config/DataRequestTaskConfig.json'
+        self.config_filename = config_dir + 'DataRequestTaskConfig.json'
+        self.logs_dir = logs_dir
         
         self.task_container = {} #{task_name:task_object}
 
@@ -185,10 +187,8 @@ class DataRequestTaskHandler():
         """Adds a new task to the config to reques new data"""
         #if already exists, delete old task and spin up new one
         task_id = data["task_name"]
-        if task_id in self.task_container.keys():
-            self.task_container[task_id].updateConfig(data)
-        else:
-            self.task_container[task_id] = DataRequestTask(data)
+        self.task_container[task_id] = DataRequestTask(data,self.logs_dir)
+
 
   
     def on_delete_task_config(self,data):
@@ -255,7 +255,7 @@ class DataRequestTaskHandler():
                 if request_packet is not None:
                     self.__sendPacketFunction__(request_packet,task_id)
             self.__checkReceiveQueue__()
-            self.sio.sleep(0.005)
+            self.sio.sleep(0.001)
     
     def publish_new_data(self,data,task_id):
         task = self.task_container[task_id]
@@ -303,6 +303,7 @@ class DataRequestTaskHandler():
 
 
     def __exitHandler__(self,sig=None,frame=None):
+        [task.__exit__() for task in self.task_container.values()] 
         self.run=False
         sys.exit(0)
 

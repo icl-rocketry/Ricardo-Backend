@@ -87,10 +87,13 @@ class SerialManager():
 			try:
 				self.__connect__()
 				self.__sm_log__("Device " + self.device + " Connected")
+				
 				break
 			except (OSError, serial.SerialException):
+				
 				if self.autoreconnect:
 					self.__sm_log__('Device ' + self.device + ' Disconnected, retrying...')
+					
 					time.sleep(1)
 					continue
 				else:
@@ -234,6 +237,11 @@ class SerialManager():
 		# cobs encode
 		encoded = bytearray(cobs.encode(modifieddata))
 		encoded += (0x00).to_bytes(1,'little') #add end packet marker
+		# try:
+		# 	self.ser.write(encoded)#write packet to serial port and hope its free lol
+		# except serial.SerialTimeoutException:
+		# 	self.__sm_log__("write timeout, dumping packet")
+		# 	pass
 		self.ser.write(encoded)#write packet to serial port and hope its free lol
 		
 
