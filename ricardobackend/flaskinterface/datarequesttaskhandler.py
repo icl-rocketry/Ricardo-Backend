@@ -163,6 +163,7 @@ class DataRequestTaskHandler():
 
         self.verbose=verbose
 
+        self.sio.on_event('connect',self.connect,namespace='/data_request_handler')
         self.sio.on_event('getRunningTasks',self.on_get_running_tasks,namespace='/data_request_handler')
         self.sio.on_event('newTaskConfig',self.on_new_task_config,namespace='/data_request_handler')
         self.sio.on_event('deleteTaskConfig',self.on_delete_task_config,namespace='/data_request_handler')
@@ -175,6 +176,8 @@ class DataRequestTaskHandler():
         signal.signal(signal.SIGTERM,self.__exitHandler__)
         self.load_handler_config() #load handler config if it exists
 
+    def connect(self):
+        pass
 
     def on_get_running_tasks(self):
         """Returns the current running tasks within the data request task handler as a json"""

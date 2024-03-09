@@ -63,9 +63,11 @@ class SerialManager():
 		queue_handler = logging.handlers.QueueHandler(logQ)
 		self.logger = logging.getLogger("system")
 		self.logger.addHandler(queue_handler)
-		#print("Logger level set to " + str(self.logger.getEffectiveLevel()))
-		print(self.logger.manager.loggerDict)
-		#self.logger.setLevel(logging.INFO)
+		
+		if verbose:
+			self.logger.setLevel(logging.DEBUG)
+		else:
+			self.logger.setLevel(logging.INFO)
 
 
 		

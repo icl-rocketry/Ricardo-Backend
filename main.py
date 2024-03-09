@@ -45,19 +45,20 @@ proclist = {}
 
 def exitBackend(sig,frame):
     global proclist
+    global logger
     logger = logging.getLogger("system")
-    print("logger level " + str(logger.getEffectiveLevel()))
+    print("level set to: " + str(logger.getEffectiveLevel()))
     for key in proclist:
         if key == 'listener':
             continue        #leave killing listener to the very end
         else:
-            logger.log("Killing: " + key + " Pid: " + str(proclist[key].pid), logging.INFO)
+            print("Killing: " + key + " Pid: " + str(proclist[key].pid))
             proclist[key].terminate()
             proclist[key].kill()
             proclist[key].join()
             proclist[key].close()
 
-    logger.log("Killing: listener" + " Pid: " + str(proclist["listener"].pid), logging.INFO)
+    print("Killing: listener" + " Pid: " + str(proclist["listener"].pid))
     proclist["listener"].terminate()
     proclist["listener"].kill()
     proclist["listener"].join()
@@ -88,7 +89,7 @@ def startWebSocketForwarder(args):
     wsforwarder.start()
 
 def startFlaskInterface(args,sendQueue,receiveQueue):
-    flaskinterface.startFlaskInterface(flaskhost=args['flask_host'],
+    flaskiface = flaskinterface.FlaskInterface(flaskhost=args['flask_host'],
                                        flaskport=args['flask_port'],
                                        fake_data=args['fake_data'],
                                        verbose=args['verbose'],
@@ -96,17 +97,10 @@ def startFlaskInterface(args,sendQueue,receiveQueue):
                                        receiveQueue=receiveQueue,
                                        config_dir=args['config_dir'],
                                        logs_dir=args['logs_dir'])
+    flaskiface.run()
 
 def listener_configurer(args):
     logger = logging.getLogger("system")
-
-    if args['verbose']:
-        logger.setLevel(logging.DEBUG)
-        #print("Logger level set to " + str(logger.getEffectiveLevel()))
-    else:
-        logger.setLevel(logging.INFO)
-        #print("Logger level set to " + str(logger.getEffectiveLevel()))
-
 
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
@@ -150,7 +144,6 @@ if __name__ == '__main__':
 
     
     sendQueue = multiprocessing.Queue()
-    # receiveQueue_dict = {"flaskinterface":multiprocessing.Queue()}
     receiveQueue = multiprocessing.Queue()
 
     if not (argsin['fake_data']):
