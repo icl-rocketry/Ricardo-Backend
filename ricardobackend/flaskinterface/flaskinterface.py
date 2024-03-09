@@ -228,7 +228,6 @@ class FlaskInterface:
         while self.flaskinterface_response_task_running:
             try:
                 item:dict = self.receiveQueue.get(block=False)  #expect a dict
-                print(item)
                 item_type = item['type'] #retrieve type of item
             
                 if item_type == 'response':
