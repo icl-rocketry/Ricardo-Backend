@@ -288,12 +288,20 @@ class DataRequestTaskHandler:
 
         # Set Socket.IO event handlers
         self.sio.on_event(
+            'connect',
+            self.connect,
+            namespace='/data_request_handler',
+        )
+        
+        self.sio.on_event(
             "getRunningTasks",
             self.on_get_running_tasks,
             namespace="/data_request_handler",
         )
         self.sio.on_event(
-            "newTaskConfig", self.on_new_task_config, namespace="/data_request_handler"
+            "newTaskConfig",
+            self.on_new_task_config, 
+            namespace="/data_request_handler"
         )
         self.sio.on_event(
             "deleteTaskConfig",
@@ -306,14 +314,18 @@ class DataRequestTaskHandler:
             namespace="/data_request_handler",
         )
         self.sio.on_event(
-            "clearTasks", self.on_clear_tasks, namespace="/data_request_handler"
+            "clearTasks", 
+            self.on_clear_tasks, 
+            namespace="/data_request_handler",
         )
+
 
         # Set run flag
         self.run = True
+        self.load_handler_config() #load handler config if it exists
 
-        # Load handler configuration (if it exists)
-        self.load_handler_config()
+    def connect(self):
+        pass
 
     def on_get_running_tasks(self):
         """Returns the current running tasks within the data request task handler as a json"""
@@ -450,6 +462,7 @@ class DataRequestTaskHandler:
 
         # Emit packet on Socket.IO
         # NOTE: simplejson used to dump json as string so that NaNs are converted to null
+        #TODO maybe append timestamp here rather than websocket forwarder?
         self.sio.emit(
             task_id,
             simplejson.dumps(decodedData, ignore_nan=True),
