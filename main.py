@@ -105,7 +105,7 @@ def listener_configurer(args):
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
     filename = datetime.now().strftime("%d_%m_%y_%H_%M_%S_%f") + ".log"
-    path = os.path.join(args['logs_dir'], "system")
+    path = os.path.join(args['logs_dir'], "SystemLogs")
     os.makedirs(path, exist_ok=True)
     file_path = os.path.join(path, filename)
     file_handler = logging.FileHandler(file_path, "a")

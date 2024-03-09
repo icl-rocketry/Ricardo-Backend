@@ -130,6 +130,8 @@ class FlaskInterface:
         pass
     
     def forward_system_event(self,event):
+        source_data = event["source"]
+        source_data['SIO_ID']  = request.sid
         self.__SystemEventHandler__(event) #forward evenet and broadcast
 
     def send_data_event(self,data):
