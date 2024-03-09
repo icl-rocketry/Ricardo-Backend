@@ -218,7 +218,11 @@ def __SystemEventHandler__(event:dict):
             "name":"", //Ignition Command, Rocket Log, TVCArm Command
             "msg":"", 
             "time":"",
-            "sender":""// - string?, ip addres? 
+            "souce":{
+                application:
+                ip:
+                rnp: RnpHeader vars
+                }
         }
     }
     '''
@@ -285,15 +289,21 @@ def __FlaskInterfaceResponseHandler__(receiveQ:mp.Queue,dtrh_receiveQ:mp.Queue):
                 #Log message data wil have a dict of the following form
                 #{"header":header_vars:dict,"message":str}
                 item.pop('type') #remove type field from item
-                # __SocketIOMessageHandler__(item)
+                __SocketIOMessageHandler__(item)
                 #format event correctly
                 event = {
-                    "level":"info",
-                    "name":"Rocket Log",
-                    "msg":item["message"],
-                    "time":time.time_ns()*(1e-6) #conversion to milliseconds?? idk
-                }
+                        "level":"info",
+                        "name":"Rocket Log",
+                        "msg":item["message"],
+                        "time":time.time_ns()*(1e-6), #conversion to milliseconds?? idk
+                        "source":{
+                                    "application":"Ricardo-Backend", #TODO maybe add versioning?
+                                    "ip":"",
+                                    "rnp":item["header"]
+                                }
+                        }
                 __SystemEventHandler__(event)
+
         except Empty:
             pass
         eventlet.sleep(0.001)#need to busy wait here as eventlet not compatible

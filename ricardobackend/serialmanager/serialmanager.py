@@ -63,7 +63,9 @@ class SerialManager():
 		queue_handler = logging.handlers.QueueHandler(logQ)
 		self.logger = logging.getLogger("system")
 		self.logger.addHandler(queue_handler)
-		self.logger.setLevel(logging.INFO)
+		#print("Logger level set to " + str(self.logger.getEffectiveLevel()))
+		print(self.logger.manager.loggerDict)
+		#self.logger.setLevel(logging.INFO)
 
 
 		
@@ -85,7 +87,7 @@ class SerialManager():
 					
 		
 	def exitHandler(self,sig,frame):
-		self.__sm_log__("Serial Manager Exited")
+		self.__sm_log__("Serial Manager Exited", logging.CRITICAL)
 		self.__disconnect__()
 		sys.exit(0)
 
@@ -93,18 +95,18 @@ class SerialManager():
 		while True:
 			try:
 				self.__connect__()
-				self.__sm_log__("Device " + self.device + " Connected")
+				self.__sm_log__("Device " + self.device + " Connected", logging.INFO)
 				
 				break
 			except (OSError, serial.SerialException):
 				
 				if self.autoreconnect:
-					self.__sm_log__('Device ' + self.device + ' Disconnected, retrying...')
+					self.__sm_log__('Device ' + self.device + ' Disconnected, retrying...', logging.CRITICAL)
 					
 					time.sleep(1)
 					continue
 				else:
-					self.__sm_log__('Device ' + self.device + ' Disconnected, killing serial manager. Bye bye!')
+					self.__sm_log__('Device ' + self.device + ' Disconnected, killing serial manager. Bye bye!', logging.CRITICAL)
 					self.exitHandler(None,None)
 	
 	def __disconnect__(self):
@@ -159,7 +161,7 @@ class SerialManager():
 					self.__sendToUDP__(decodedData) 
 					# self.__sm_log__(decodedData)
 				except cobs.DecodeError as e:
-					self.__sm_log__("Decoded Error, the following data could not be decoded...")
+					self.__sm_log__("Decoded Error, the following data could not be decoded...", logging.ERROR)
 					print(e)
 					print(self.receiveBuffer)
 					
@@ -175,14 +177,14 @@ class SerialManager():
 		try:
 			header = RnpHeader.from_bytes(data)#decode header
 		except DeserializationError:
-			self.__sm_log__("Deserialization Error")
-			self.__sm_log__(str(data))
+			self.__sm_log__("Deserialization Error", logging.ERROR)
+			self.__sm_log__(str(data), logging.DEBUG)
 			return
 		#check header len
 		
 		if (len(data) != (RnpHeader.size + header.packet_len)):
-			self.__sm_log__("Length Mismatch expected:" + str((RnpHeader.size + header.packet_len)) + " Received: " + str(len(data)))
-			self.__sm_log__(data.hex())
+			self.__sm_log__("Length Mismatch expected:" + str((RnpHeader.size + header.packet_len)) + " Received: " + str(len(data)), logging.WARNING)
+			self.__sm_log__(data.hex(), logging.DEBUG)
 			return
 
 		uid = header.uid #get unique id
@@ -195,7 +197,7 @@ class SerialManager():
 				sendData = {'identifier':identifier,'type':'response','data':data}
 				self.receiveQ.put_nowait(sendData)
 			except Full:
-				self.__sm_log__('receive queue full, dumping packet!')
+				self.__sm_log__('receive queue full, dumping packet!', logging.ERROR)
 				return
 
 
@@ -207,7 +209,7 @@ class SerialManager():
 				return
 
 			#unkown packet received -> dump packet ; might be worth spewing these into a file
-			self.__sm_log__("unkown packet recieved")
+			self.__sm_log__("unkown packet received", logging.ERROR)
 			print(header)#TODO logging
 			return
 
@@ -232,11 +234,9 @@ class SerialManager():
 				self.__processSendQueue__()
 				self.prevSendTime = time.time_ns()
 
-	def __sm_log__(self,msg):
-		#serial maanger logger, will replace with something better than self.__sm_log__ in the future - famous last words
-		#print('[Serial Manager] - ' + str(msg))
+	def __sm_log__(self, msg, level):
 		message = '[Serial Manager] - ' + str(msg)
-		self.logger.log(logging.CRITICAL, message)
+		self.logger.log(level, message)
 		
 			
 	def __processSendQueue__(self):

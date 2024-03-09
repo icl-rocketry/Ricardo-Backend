@@ -45,14 +45,26 @@ proclist = {}
 
 def exitBackend(sig,frame):
     global proclist
+    logger = logging.getLogger("system")
+    print("logger level " + str(logger.getEffectiveLevel()))
     for key in proclist:
-        print("Killing: " + key + " Pid: " + str(proclist[key].pid))
-        proclist[key].terminate()
-        proclist[key].kill()
-        proclist[key].join()
-        proclist[key].close()
+        if key == 'listener':
+            continue        #leave killing listener to the very end
+        else:
+            logger.log("Killing: " + key + " Pid: " + str(proclist[key].pid), logging.INFO)
+            proclist[key].terminate()
+            proclist[key].kill()
+            proclist[key].join()
+            proclist[key].close()
+
+    logger.log("Killing: listener" + " Pid: " + str(proclist["listener"].pid), logging.INFO)
+    proclist["listener"].terminate()
+    proclist["listener"].kill()
+    proclist["listener"].join()
+    proclist["listener"].close()    
 
     sys.exit(0)
+
 
 def startSerialManager(args,sendQueue,receiveQueue,logQueue):
 
@@ -88,9 +100,15 @@ def startFlaskInterface(args,sendQueue,receiveQueue):
 def listener_configurer(args):
     logger = logging.getLogger("system")
 
-    formatter = logging.Formatter('%(asctime)s - %(message)s')
+    if args['verbose']:
+        logger.setLevel(logging.DEBUG)
+        #print("Logger level set to " + str(logger.getEffectiveLevel()))
+    else:
+        logger.setLevel(logging.INFO)
+        #print("Logger level set to " + str(logger.getEffectiveLevel()))
 
 
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
     filename = datetime.now().strftime("%d_%m_%y_%H_%M_%S_%f") + ".log"
     path = os.path.join(args['logs_dir'], "system")
