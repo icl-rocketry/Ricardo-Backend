@@ -5,6 +5,7 @@ from flask_socketio import SocketIO, emit, send # added emit from flask_socketio
 import multiprocessing as mp
 import queue as q
 import time
+import simplejson
 
 
 from .taskhandler_webui import taskhandler_webui_bp
@@ -212,7 +213,7 @@ class FlaskInterface:
             }
         }
         '''
-        self.socketio.emit("new_event",event,namespace="/system_events")  
+        self.socketio.emit("new_event",simplejson.dumps(event),namespace="/system_events")  
  
     def __DummySignalBroadcastTask__(self):
         # Create emitter

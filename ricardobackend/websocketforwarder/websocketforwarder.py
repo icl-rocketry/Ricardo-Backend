@@ -64,6 +64,7 @@ class WebsocketForwarder:
         self.sio.on("connect_error", self.connect_error)
         self.sio.on("disconnect", self.disconnect)
         self.sio.on("*", self.forward_telemetry, namespace="/telemetry")
+        self.sio.on("*", self.forward_telemetry, namespace="/system_events")
 
     async def connect(self) -> None:
         # Print connection message
@@ -78,6 +79,7 @@ class WebsocketForwarder:
         print("Disconnected")
 
     async def forward_telemetry(self, event, data) -> None:
+
         # Check if the event is new
         if event not in self.data_queue_dict.keys():
             # Spawn new queue
@@ -132,7 +134,7 @@ class WebsocketForwarder:
         while True:
             try:
                 # Connect to the Socket.IO server
-                await self.sio.connect(self.sio_url, namespaces=["/telemetry"])
+                await self.sio.connect(self.sio_url, namespaces=["/telemetry","/system_events"])
 
                 # Break loop
                 break
