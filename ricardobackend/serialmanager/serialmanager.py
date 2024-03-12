@@ -236,7 +236,7 @@ class SerialManager():
 				self.__processSendQueue__()
 				self.prevSendTime = time.time_ns()
 
-	def __sm_log__(self, msg, level):
+	def __sm_log__(self, msg, level=logging.DEBUG):
 		message = '[Serial Manager] - ' + str(msg)
 		self.logger.log(level, message)
 		

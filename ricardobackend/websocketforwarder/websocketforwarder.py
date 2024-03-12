@@ -24,11 +24,6 @@ NS_TO_MS = 1e-6
 
 
 class WebsocketForwarder:
-    # Declare Socket.IO client
-    sio = socketio.AsyncClient()
-
-    # Declare data queue dictionary (thread-safe through GIL)
-    data_queue_dict = {}
 
     def __init__(
         self,
@@ -40,6 +35,13 @@ class WebsocketForwarder:
         # Set signal handlers
         signal.signal(signal.SIGINT, self.exitHandler)
         signal.signal(signal.SIGTERM, self.exitHandler)
+
+        # Declare Socket.IO client
+        self.sio = socketio.AsyncClient()
+
+        # Declare data queue dictionary (thread-safe through GIL)
+        self.data_queue_dict = {}
+        self.data_queue_maxsize = -1 #unlimited for now?
 
         # Set run flag
         self.run = True
@@ -80,10 +82,9 @@ class WebsocketForwarder:
 
     async def forward_telemetry(self, event, data) -> None:
 
-        # Check if the event is new
-        if event not in self.data_queue_dict.keys():
-            # Spawn new queue
-            self.data_queue_dict[event] = asyncio.Queue(maxsize=2)
+        # Check if the event exists in the data dict or thre is space to add a new key
+        if not self.addNewQueue(event):
+            return
 
         # Try to put the data on the event queue
         try:
@@ -101,11 +102,8 @@ class WebsocketForwarder:
         telemetry_key = path[len("/ws/") :]
 
         # Check that telemetry key exists in the data queue dictionary
-        if telemetry_key not in self.data_queue_dict.keys():
-            # Print error message
-            print(telemetry_key + " not found")
-
-            # Return
+        # Check if the event exists in the data dict or thre is space to add a new key
+        if not self.addNewQueue(telemetry_key):
             return
 
         # Extract data queue
@@ -169,6 +167,17 @@ class WebsocketForwarder:
 
         # Exit
         sys.exit(0)
+    
+    def addNewQueue(self,taskname):
+        if len(self.data_queue_dict) == self.data_queue_maxsize:
+            print("Error number of keys in data dict exceeds max size! " + str(self.data_queue_maxsize))
+            return False
+        
+        if taskname not in self.data_queue_dict.keys():
+            # Spawn new queue
+            self.data_queue_dict[taskname] = asyncio.Queue(maxsize=2)
+
+        return True
 
 
 if __name__ == "__main__":
