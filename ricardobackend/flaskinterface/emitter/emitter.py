@@ -1,12 +1,14 @@
 # Standard imports
 import json
 import os
+import time
 
 # Third-party imports
 import eventlet
 from flask_socketio import SocketIO
 import numpy as np
 import pandas as pd
+import simplejson
 
 # Default fake telemetry directory
 DEFAULT_DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
@@ -74,16 +76,16 @@ class Emitter:
         self.running = True
 
     @staticmethod
-    def decode_system_status(string: str) -> str:
-        return format(int(string), "029b")[::-1]
-
-    @staticmethod
     def format(packet: dict, indent: int = 2) -> str:
-        # Format system status string
-        if "system_status" in packet:
-            packet["system_status"] = Emitter.decode_system_status(packet["system_status"])
+        #remove backendtime field
+        packet.pop("BackendTime")
 
-        return json.dumps(packet, indent=indent)
+        #use current time for timestamp
+        dataFrame:dict = {"timestamp":time.time_ns()*1e-6,
+                          "data":packet}
+
+
+        return json.dumps(dataFrame, indent=indent)
 
     def emit(self) -> None:
         # Extract current index
