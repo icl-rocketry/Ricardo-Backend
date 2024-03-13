@@ -95,7 +95,7 @@ class WebsocketForwarder:
 
     async def send_to_websocket(self, websocket, path) -> None:
         # Print path
-        print(path)
+        print(path) #TODO use logging library!!
 
         # Strip prefix from path to get telemetry key
         # TODO: more robust method?
@@ -103,7 +103,7 @@ class WebsocketForwarder:
 
         # Check that telemetry key exists in the data queue dictionary
         # Check if the event exists in the data dict or thre is space to add a new key
-        if not self.addNewQueue(telemetry_key):
+        if not self.addNewQueue(telemetry_key): # ? we might want to instead send null/NaN rather than just make the queue???
             return
 
         # Extract data queue
@@ -175,7 +175,7 @@ class WebsocketForwarder:
         
         if taskname not in self.data_queue_dict.keys():
             # Spawn new queue
-            self.data_queue_dict[taskname] = asyncio.Queue(maxsize=2)
+            self.data_queue_dict[taskname] = asyncio.Queue(maxsize=2) #contention??
 
         return True
 
