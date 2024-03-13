@@ -460,12 +460,15 @@ class DataRequestTaskHandler:
             # Return
             return
 
+        #create data frame
+        dataFrame:dict = {"timestamp":time.time_ns()*1e-6,
+                          "data":decodedData}
         # Emit packet on Socket.IO
         # NOTE: simplejson used to dump json as string so that NaNs are converted to null
         #TODO maybe append timestamp here rather than websocket forwarder?
         self.sio.emit(
             task_id,
-            simplejson.dumps(decodedData, ignore_nan=True),
+            simplejson.dumps(dataFrame, ignore_nan=True),
             namespace="/telemetry",
         )
 

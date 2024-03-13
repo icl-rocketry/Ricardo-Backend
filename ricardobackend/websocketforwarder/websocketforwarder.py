@@ -120,8 +120,11 @@ class WebsocketForwarder:
 
             # Send data over WebSocket
             # TODO: set timestamp on the DataRequestHandler?
+            # await websocket.send(
+            #     f'{{"timestamp": {time.time_ns()*NS_TO_MS}, "data": {data}}}'
+            # )
             await websocket.send(
-                f'{{"timestamp": {time.time_ns()*NS_TO_MS}, "data": {data}}}'
+                data
             )
 
             # Sleep to reduce loop rate

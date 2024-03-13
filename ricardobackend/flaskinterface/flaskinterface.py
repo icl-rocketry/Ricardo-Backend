@@ -214,6 +214,7 @@ class FlaskInterface:
         }
         '''
         self.socketio.emit("new_event",simplejson.dumps(event),namespace="/system_events")  
+        #TODO Log to system log file!
  
     def __DummySignalBroadcastTask__(self):
         # Create emitter
