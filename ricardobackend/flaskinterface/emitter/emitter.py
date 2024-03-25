@@ -77,14 +77,13 @@ class Emitter:
 
     @staticmethod
     def format(packet: dict, indent: int = 2) -> str:
-        #remove backendtime field
+        # Remove BackendTime field
         packet.pop("BackendTime")
 
-        #use current time for timestamp
-        dataFrame:dict = {"timestamp":time.time_ns()*1e-6,
-                          "data":packet}
+        # Use current time for timestamp
+        dataFrame: dict = {"timestamp": time.time_ns() * 1e-6, "data": packet}
 
-
+        # Return formatted packet
         return json.dumps(dataFrame, indent=indent)
 
     def emit(self) -> None:
@@ -108,7 +107,6 @@ class Emitter:
             packet = row.to_dict(orient="records")[0]
 
             # Format packet
-            # TODO: formatter?
             packet = Emitter.format(packet)
 
             # Print packet
