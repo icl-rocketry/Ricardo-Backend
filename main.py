@@ -6,7 +6,7 @@ import signal
 import logging
 import logging.handlers
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 from ricardobackend.flaskinterface import flaskinterface
 from ricardobackend.serialmanager import serialmanager
@@ -104,7 +104,7 @@ def listener_configurer(args):
 
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
-    filename = datetime.now().strftime("%d_%m_%y_%H_%M_%S_%f") + ".log"
+    filename = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S.%fZ") + ".log"
     path = os.path.join(args['logs_dir'], "SystemLogs")
     os.makedirs(path, exist_ok=True)
     file_path = os.path.join(path, filename)

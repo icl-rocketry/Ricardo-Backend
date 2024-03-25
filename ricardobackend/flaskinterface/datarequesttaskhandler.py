@@ -1,7 +1,7 @@
 # Standard imports
 import copy
 import csv
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 import multiprocessing as mp
 import os
@@ -46,12 +46,12 @@ class DataRequestTask:
         self.lastReceivedTime = 0
 
         # Set file name
-        # TODO: change to ISO-8601
+        # TODO: centralise datetime format string?
         self.fileName = (
             logs_dir
-            + self.config["task_name"]
+            + datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S.%fZ")
             + "_"
-            + datetime.now().strftime("%d_%m_%y_%H_%M_%S_%f")
+            + self.config["task_name"]
             + ".csv"
         )
 
