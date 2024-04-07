@@ -79,7 +79,9 @@ class DataRequestTask:
 
         # Reset connection variables
         self.config["rxCounter"] = 0
+        self.config["rxBytes"] = 0
         self.config["txCounter"] = 0
+        self.config["txBytes"] = 0
         self.config["connected"] = True
         self.config["lastReceivedPacket"] = ""
 
@@ -164,6 +166,8 @@ class DataRequestTask:
                 # Increment transmission counter
                 self.config["txCounter"] += 1
 
+                #Increment bytes counter #! packet size is only payload, not including header so need to manually add header size!
+                self.config["txBytes"] += command_packet.header.size + command_packet.size
                 # Return command packet
                 return command_packet
 
@@ -173,6 +177,8 @@ class DataRequestTask:
     def decodeData(self, data) -> Union[None, dict]:
         # Update connection state variables
         self.config["rxCounter"] += 1
+        #increment received bytes record
+        self.config["rxBytes"] += len(data)
         self.lastReceivedTime = time.time_ns()
         self.config["lastReceivedPacket"] = data.hex()
         self.config["connected"] = True
@@ -465,7 +471,7 @@ class DataRequestTaskHandler:
                           "data":decodedData}
         # Emit packet on Socket.IO
         # NOTE: simplejson used to dump json as string so that NaNs are converted to null
-        #TODO maybe append timestamp here rather than websocket forwarder?
+        #TODO: some kinda of task metadata on telemetry channel too? or maybe on the dtrh channel
         self.sio.emit(
             task_id,
             simplejson.dumps(dataFrame, ignore_nan=True),
