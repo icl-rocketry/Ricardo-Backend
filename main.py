@@ -149,9 +149,6 @@ def exitBackend(sig, frame):
     # Get system logger
     logger = logging.getLogger("system")
 
-    # Print logging level
-    print("level set to: " + str(logger.getEffectiveLevel()))
-
     # Iterate through process dictionary
     for key in proclist:
         # Check for listener process
@@ -207,13 +204,14 @@ def startWebSocketForwarder(args):
         sio_port=args["flask_port"],
         ws_host=args["ws_host"],
         ws_port=args["ws_port"],
+        logQ=logQueue,
     )
 
     # Run websocket forwarder
     wsforwarder.start()
 
 
-def startFlaskInterface(args, sendQueue, receiveQueue):
+def startFlaskInterface(args, sendQueue, receiveQueue, logQueue):
     # Declare Flask interface
     flaskiface = flaskinterface.FlaskInterface(
         flaskhost=args["flask_host"],
@@ -222,6 +220,7 @@ def startFlaskInterface(args, sendQueue, receiveQueue):
         verbose=args["verbose"],
         sendQueue=sendQueue,
         receiveQueue=receiveQueue,
+        logQ=logQueue,
         config_dir=args["config_dir"],
         logs_dir=args["logs_dir"],
     )
@@ -281,7 +280,7 @@ def listener_process(args, queue, configurer):
             logger.handle(record)
         except Exception:
             # Print error message
-            print("Problem:", file=sys.stderr)
+            print("Error:", file=sys.stderr)
 
             # Print traceback
             traceback.print_exc(file=sys.stderr)
@@ -323,7 +322,7 @@ if __name__ == "__main__":
 
     # Add Flask interface to the process dictionary
     proclist["flaskinterface"] = multiprocessing.Process(
-        target=startFlaskInterface, args=(argsin, sendQueue, receiveQueue)
+        target=startFlaskInterface, args=(argsin, sendQueue, receiveQueue, logQueue)
     )
 
     # Start Flask interface
@@ -334,7 +333,7 @@ if __name__ == "__main__":
 
     # Add websocket forwarder to the process dictionary
     proclist["websocketforwarder"] = multiprocessing.Process(
-        target=startWebSocketForwarder, args=(argsin,)
+        target=startWebSocketForwarder, args=(argsin)
     )
 
     # Start websocket forwarder

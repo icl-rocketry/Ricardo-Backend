@@ -19,12 +19,14 @@ import sys
 # third-party packages
 import eventlet # re-formatted eventlet comment
 
+import logging
+import logging.handlers
 
 
 class FlaskInterface:
 
 
-    def __init__(self,config_dir:str,logs_dir:str,sendQueue:mp.Queue = None,receiveQueue:mp.Queue = None,flaskhost="0.0.0.0", flaskport=5000, 
+    def __init__(self,config_dir:str,logs_dir:str,sendQueue:mp.Queue = None,receiveQueue:mp.Queue = None,logQ:mp.Queue = None,flaskhost="0.0.0.0", flaskport=5000, 
                          fake_data=False,verbose=False):
 
         # flask app 
@@ -50,6 +52,7 @@ class FlaskInterface:
 
         self.sendQueue = sendQueue
         self.receiveQueue = receiveQueue
+        self.logQueue = logQ
         self.flaskhost = flaskhost
         self.flaskport = flaskport
         self.fake_data = fake_data
@@ -75,6 +78,16 @@ class FlaskInterface:
         self.socketio.on_event('disconnect',self.disconnect_command,namespace='/packet')
 
         # self.__startFlaskInterface__(config_dir,logs_dir,sendQueue,receiveQueue,flaskhost, flaskport, fake_data,verbose)
+
+        # logging
+        queue_handler = logging.handlers.QueueHandler(logQ)
+        self.logger = logging.getLogger("system")
+        self.logger.addHandler(queue_handler)
+        if verbose:
+            self.logger.setLevel(logging.DEBUG)
+        else:
+            self.logger.setLevel(logging.INFO)
+
 
     def send_packet(self):
 
@@ -125,7 +138,9 @@ class FlaskInterface:
 
     def connect_command(self):
         self.socketio_clients.append(request.sid)
-        print("Client : " + request.sid + " joined command...")
+        #print("Client : " + request.sid + " joined command...")
+        msg = "Client : " + request.sid + " joined command..."
+        self.__flaskint_log__(msg, level=logging.INFO)
 
     def connect_system_events(self):
         pass
@@ -147,14 +162,18 @@ class FlaskInterface:
         try:
             self.sendQueue.put_nowait(sendData)
         except Full:
-            print('[Flask-Inteface] Send Queue full, discarding packet!')
+            #print('[Flask-Inteface] Send Queue full, discarding packet!')
+            self.__flaskint_log__('Send Queue full, discarding packet!', level=logging.ERROR)
+            
         
     def disconnect_command(self):
-        print("Client : " + request.sid + " left command...")
+        #print("Client : " + request.sid + " left command...")
+        msg = "Client : " + request.sid + " left command..."
+        self.__flaskint_log__(msg, level=logging.INFO)
         self.socketio_clients.remove(request.sid)
     # TASKS
     def startDataRequestHandler(self):
-        datarequesthandler = DataRequestTaskHandler(self.socketio,self.config_dir,self.logs_dir,sendQ = self.sendQueue,receiveQ = self.dtrh_receiveQ,verbose=self.verbose)
+        datarequesthandler = DataRequestTaskHandler(self.socketio,self.config_dir,self.logs_dir,logQ = self.logQueue, sendQ = self.sendQueue,receiveQ = self.dtrh_receiveQ,verbose=self.verbose)
         datarequesthandler.mainloop()
 
     def __SocketIOResponseHandler__(self,item):
@@ -188,7 +207,8 @@ class FlaskInterface:
             try:
                 self.rest_response_list[clientid].put_nowait(item)
             except Full:
-                print('[Flask-Interface]: rest response queue full, removing first item and pushing to queue!')
+                #print('[Flask-Interface]: rest response queue full, removing first item and pushing to queue!')
+                self.__flaskint_log__('REST response queue full, removing first item and pushing to queue!', level=logging.WARNING)
                 self.rest_response_list[clientid].get()
                 self.rest_response_list[clientid].put_nowait(item)
 
@@ -224,7 +244,10 @@ class FlaskInterface:
         emitter.run()
 
         # Print exit message
-        print('DummySignalBroadCastTask Killed')
+        #print('DummySignalBroadCastTask Killed')
+        self.__flaskint_log__('DummySignalBroadCastTask Killed', level=logging.DEBUG)
+
+        
 
     def __FlaskInterfaceResponseHandler__(self):
         self.flaskinterface_response_task_running = True
@@ -241,7 +264,8 @@ class FlaskInterface:
                     try:
                         identifier:dict = item['identifier'] 
                     except KeyError:
-                        print('[Flask-Interface]: identifier key not found in item') #TODO Log
+                        #print('[Flask-Interface]: identifier key not found in item') #TODO Log
+                        self.__flaskint_log__('Identifier key not found in item', level=logging.ERROR)
                         continue
                     #identifier will be a dict which structure depends on the prticular applicaiton 
                     #for the flask interface we expct somethign like this
@@ -251,7 +275,8 @@ class FlaskInterface:
                     try:
                         process_identifier:str = identifier['process_id'] #TODO Log
                     except KeyError:
-                        print('[Flask-Interface]: process_id key not found in item')
+                        #print('[Flask-Interface]: process_id key not found in item')
+                        self.__flaskint_log__('Process_id key not found in item', level=logging.ERROR)
                         continue
                 
                     # print(process_identifier)
@@ -259,15 +284,18 @@ class FlaskInterface:
                         try:
                             self.dtrh_receiveQ.put_nowait(item)
                         except Full:
-                            print("[Flask-Interface] data task request handler queue full, discarding packet!")
+                            #print("[Flask-Interface] data task request handler queue full, discarding packet!")
+                            self.__flaskint_log__('Data task request handler queue full, discarding packet!', level=logging.ERROR)
                     elif process_identifier == "SIO":
                         self.__SocketIOResponseHandler__(item)
                     elif process_identifier == "REST":
                         self.__RESTAPIResponseHandler__(item)
                     else:
                         #TODO need to use an actual logging library not just print statements...
-                        print("[Flask-Interface] : task id not recognised")
-                
+                        #print("[Flask-Interface] : task id not recognised")
+                        self.__flaskint_log__('Task id not recognised', level=logging.ERROR)
+
+            
                         
                         #try continue with life
                         # expect to catch badly formatted json
@@ -300,19 +328,24 @@ class FlaskInterface:
 
         eventlet.sleep(0.2)#allow threads to terminate
 
-        print("\nFlask Interface Exited")
+        #print("\nFlask Interface Exited")
+        self.__flaskint_log__('Flask Interface Exited', level=logging.INFO)
 
         sys.exit(0)
 
 
     def run(self):
         
-        print("Starting server on port " + str(self.flaskport) + "...") #todo logging
+        #print("Starting server on port " + str(self.flaskport) + "...") #todo logging
+        msg = "Starting server on port " + str(self.flaskport) + "..."
+        self.__flaskint_log__(msg, level=logging.INFO)
 
         if (self.fake_data):
             # fake signal handler for ui testing only!!!
             fake_signal_filename = 'telemetry_log.txt' #is this even required?
-            print("Reading fake signal from " + fake_signal_filename)
+            #print("Reading fake signal from " + fake_signal_filename)
+            msg = "Reading fake signal from " + fake_signal_filename
+            self.__flaskint_log__(msg, level=logging.DEBUG)
             
 
             self.socketio.start_background_task(self.startDataRequestHandler)
@@ -322,7 +355,8 @@ class FlaskInterface:
         else:
 
             if self.sendQueue is None or self.receiveQueue is None:
-                print("No Send or Receive Queue Provided, Quiting!") #TODO Logging
+                #print("No Send or Receive Queue Provided, Quiting!") #TODO Logging
+                self.__flaskint_log__('No Send or Receive Queue Provided, Quiting!', level=logging.CRITICAL)
 
             else:  
                 self.socketio.start_background_task(self.startDataRequestHandler)
@@ -330,6 +364,10 @@ class FlaskInterface:
                 self.socketio.run(self.app, host=self.flaskhost, port=self.flaskport, debug=False, use_reloader=False)
 
         self.cleanup()
+
+    def __flaskint_log__(self, msg, level=logging.DEBUG):
+        message = '[Flask Interface] - ' + str(msg)
+        self.logger.log(level, message)
         
 if __name__ == "__main__":
     FlaskInterface(flaskport=1337, fake_data=True)

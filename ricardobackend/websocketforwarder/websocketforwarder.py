@@ -5,6 +5,9 @@ import logging
 import signal
 import sys
 import time
+import logging
+import logging.handlers
+import multiprocessing as mp
 
 # Third-party imports
 import socketio
@@ -31,6 +34,7 @@ class WebsocketForwarder:
         sio_port: int = 1337,
         ws_host: str = "localhost",
         ws_port: int = 8080,
+        logQ:mp.Queue = None,
     ) -> None:
         # Set signal handlers
         signal.signal(signal.SIGINT, self.exitHandler)
@@ -68,17 +72,26 @@ class WebsocketForwarder:
         self.sio.on("*", self.forward_telemetry, namespace="/telemetry")
         self.sio.on("*", self.forward_telemetry, namespace="/system_events")
 
+        # logging
+        queue_handler = logging.handlers.QueueHandler(logQ)
+        self.logger = logging.getLogger("system")
+        self.logger.addHandler(queue_handler)
+        self.logger.setLevel(logging.INFO)
+
     async def connect(self) -> None:
         # Print connection message
-        print("Connected")
+        #print("Connected")
+        self.__wbsforwarder_log__("Connected", logging.INFO)
 
     async def connect_error(self, e) -> None:
         # Print connection error
-        print(e)
+        #print(e)
+        self.__wbsforwarder_log__(e, logging.ERROR)
 
     async def disconnect(self) -> None:
         # Print disconnection message
-        print("Disconnected")
+        #print("Disconnected")
+        self.__wbsforwarder_log__("Disconnected", logging.INFO)
 
     async def forward_telemetry(self, event, data) -> None:
 
@@ -95,7 +108,8 @@ class WebsocketForwarder:
 
     async def send_to_websocket(self, websocket, path) -> None:
         # Print path
-        print(path) #TODO use logging library!!
+        #print(path) #TODO use logging library!!
+        self.__wbsforwarder_log__(path, logging.INFO)
 
         # Strip prefix from path to get telemetry key
         # TODO: more robust method?
@@ -110,7 +124,9 @@ class WebsocketForwarder:
         data_queue = self.data_queue_dict[telemetry_key]
 
         # Print connection message
-        print(telemetry_key + " connected")
+        #print(telemetry_key + " connected")
+        message = telemetry_key + " connected"
+        self.__wbsforwarder_log__(message, logging.INFO)
 
         # Loop while run flag is set
         while self.run:
@@ -138,9 +154,11 @@ class WebsocketForwarder:
                 break
             except socketio.exceptions.ConnectionError:
                 # Print connection error message
-                print(
-                    "[WebsocketForwarder]: Couldn't connect to SIO server, trying again!"
-                )
+                # print(
+                #     "[WebsocketForwarder]: Couldn't connect to SIO server, trying again!"
+                # )
+                message = "Couldn't connect to SIO server, trying again!"
+                self.__wbsforwarder_log__(message, logging.ERROR)
 
                 # Sleep to reduce retry rate
                 await asyncio.sleep(1)
@@ -163,14 +181,17 @@ class WebsocketForwarder:
             self.eventLoop.close()
 
         # Print exit message
-        print("\nWebsocketforwarder Exited!")
+        #print("\nWebsocketforwarder Exited!")
+        self.__wbsforwarder_log__("Websocketforwarder Exited!", logging.INFO)
 
         # Exit
         sys.exit(0)
     
     def addNewQueue(self,taskname):
         if len(self.data_queue_dict) == self.data_queue_maxsize:
-            print("Error number of keys in data dict exceeds max size! " + str(self.data_queue_maxsize))
+            #print("Error number of keys in data dict exceeds max size! " + str(self.data_queue_maxsize))
+            message = "Number of keys in data dict exceeds max size! " + str(self.data_queue_maxsize)
+            self.__wbsforwarder_log__(message, logging.INFO)
             return False
         
         if taskname not in self.data_queue_dict.keys():
@@ -178,6 +199,10 @@ class WebsocketForwarder:
             self.data_queue_dict[taskname] = asyncio.Queue(maxsize=2) #contention??
 
         return True
+    
+    def __wbsforwarder_log__(self, msg, level=logging.DEBUG):
+        message = '[Web Socket Forwarder] - ' + str(msg)
+        self.logger.log(level, message)
 
 
 if __name__ == "__main__":

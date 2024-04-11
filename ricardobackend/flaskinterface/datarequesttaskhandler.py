@@ -10,6 +10,8 @@ import signal
 import sys
 import time
 from typing import Union
+import logging
+import logging.handlers
 
 # Third-party imports
 import eventlet
@@ -26,7 +28,7 @@ MS_TO_NS = 1e6
 
 
 class DataRequestTask:
-    def __init__(self, jsonconfig: dict, logs_dir: str) -> None:
+    def __init__(self, jsonconfig: dict, logs_dir: str, logQ:mp.Queue = None) -> None:
         # Declare task configuration
         self.config = {}
 
@@ -73,6 +75,12 @@ class DataRequestTask:
         # Initialise previous update time
         self.prevUpdateTime = 0
 
+        # Logging
+        queue_handler = logging.handlers.QueueHandler(logQ)
+        self.logger = logging.getLogger("system")
+        self.logger.addHandler(queue_handler)
+        self.logger.setLevel(logging.INFO)
+
     def updateConfig(self, jsonconfig: dict) -> None:
         # Store a deep copy of the provided task configuration
         self.config = copy.deepcopy(jsonconfig)
@@ -102,9 +110,8 @@ class DataRequestTask:
                 decoder["decoder"] = bitfield_decoder.BitfieldDecoder(decoder["flags"])
             except KeyError:
                 # Print error message
-                print(
-                    "[Data Task Request Handler] Bad Config, ignoring entry" + decoder
-                )
+                #print("[Data Task Request Handler] Bad Config, ignoring entry" + decoder)
+                self.__datarequest_log__("Bad Config, ignoring entry" + decoder, level=logging.ERROR)
 
                 # Continue to next bitfield decoder
                 continue
@@ -133,7 +140,8 @@ class DataRequestTask:
                 requestConfig = self.config.get("request_config", None)
                 if requestConfig is None:
                     # Print error message
-                    print("[Data Task Request Handler] Error No Request Config")
+                    #print("[Data Task Request Handler] Error No Request Config")
+                    self.__datarequest_log__("No Request Config", level=logging.ERROR)
 
                     # Return
                     return None
@@ -189,7 +197,9 @@ class DataRequestTask:
             deserialized_packet = self.packet_class.from_bytes(data)
         except rnppacket.DeserializationError as e:
             # Print error message
-            print("[Data Task Request Handler] received badly formed packet: " + str(e))
+            #print("[Data Task Request Handler] received badly formed packet: " + str(e))
+            self.__datarequest_log__("Received badly formed packet: " + str(e), level=logging.ERROR)
+
 
             # Return
             return None
@@ -222,9 +232,10 @@ class DataRequestTask:
             # Check if the bitfield name already exists in the packet data
             if variableName in packetData.keys():
                 # Print error message
-                print(
-                    "[Data Task Request Handler] bitfield variable name already exists in decoded packet data, skipping..."
-                )
+                # print(
+                #     "[Data Task Request Handler] bitfield variable name already exists in decoded packet data, skipping..."
+                # )
+                self.__datarequest_log__("Bitfield variable name already exists in decoded packet data, skipping...", level=logging.ERROR)
 
                 # Continue to the next bitfield decoder
                 continue
@@ -236,7 +247,8 @@ class DataRequestTask:
                 )
             except KeyError:
                 # Print error message
-                print("[Data Task Request Handler] key not found, skipping...")
+                #print("[Data Task Request Handler] key not found, skipping...")
+                self.__datarequest_log__("Key not found, skipping...", level=logging.ERROR)
 
                 # Continue to the next bitfield decoder
                 continue
@@ -359,7 +371,8 @@ class DataRequestTaskHandler:
         # Check for no tasks
         if self.task_container is False:
             # Print log message
-            print("[Data Task Request Handler] No Tasks, Saving empty json")
+            #print("[Data Task Request Handler] No Tasks, Saving empty json")
+            self.__datarequest_log__("No Tasks, Saving empty json", level=logging.INFO)
 
             # Set empty task configuration
             handler_config = {}
@@ -375,7 +388,8 @@ class DataRequestTaskHandler:
             json_string = json.dumps(handler_config, indent=1)
         except Exception as e:
             # Print error message
-            print("[Data Task Request Handler] config save error: " + str(e))
+            #print("[Data Task Request Handler] config save error: " + str(e))
+            self.__datarequest_log__("Config save error: " + str(e), level=logging.ERROR)
 
             # Return
             return
@@ -396,7 +410,9 @@ class DataRequestTaskHandler:
                     # Check for empty configuration file
                     if not handler_config:
                         # Print error message
-                        print("[Data Task Request Handler] Empty Json Config")
+                        #print("[Data Task Request Handler] Empty Json Config")
+                        self.__datarequest_log__("Empty Json Config", level=logging.ERROR)
+
 
                         # Return
                         return
@@ -415,16 +431,19 @@ class DataRequestTaskHandler:
                 except json.JSONDecodeError:
                     # Print error message
                     print("[Data Task Request Handler] Error opening config file!")
+                    self.__datarequest_log__("Error opening config file!", level=logging.ERROR)
 
                     # Return
                     return
 
         except FileNotFoundError as e:
             # Print exception
-            print(e)
+            #print(e)
+            
 
             # Print error message
-            print("No Config Found!")
+            #print("No Config Found!")
+            self.__datarequest_log__("No Config Found! " + str(e), level=logging.ERROR)
 
             # Return
             return
@@ -494,7 +513,8 @@ class DataRequestTaskHandler:
             self.sendQ.put_nowait(send_data)
         except Full:
             # Print error
-            print("[Data Task Request Handler] Send Queue Full!")
+            #print("[Data Task Request Handler] Send Queue Full!")
+            self.__datarequest_log__("Send Queue Full!", level=logging.ERROR)
 
     def __checkReceiveQueue__(self):
         try:
@@ -514,7 +534,9 @@ class DataRequestTaskHandler:
                 self.publish_new_data(responseData, task_id)
             else:
                 # Dump packet as task no longer active
-                print("[Data Task Request Handler] dumping")
+                #print("[Data Task Request Handler] dumping")
+                self.__datarequest_log__("dumping", level=logging.INFO)
+
 
         except Empty:
             # Continue as there are no packets to process
@@ -529,3 +551,7 @@ class DataRequestTaskHandler:
 
         # Exit process
         sys.exit(0)
+
+    def __datarequest_log__(self, msg, level=logging.DEBUG):
+        message = '[Data Task Request Handler] - ' + str(msg)
+        self.logger.log(level, message)
