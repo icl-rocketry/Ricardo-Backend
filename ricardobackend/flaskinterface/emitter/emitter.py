@@ -15,7 +15,12 @@ DEFAULT_DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "da
 
 
 class Emitter:
+    # TODO add log queue and centralized logging implementation here @artem
     def __init__(self, sio: SocketIO, directory: str = DEFAULT_DIRECTORY, loop: bool = False) -> None:
+        
+        # Set running flag
+        self.running = True
+        
         # Store SocketIO client
         self.sio = sio
 
@@ -50,7 +55,12 @@ class Emitter:
             # Store name and data
             self.name.append(name)
             self.data.append(data)
-
+        
+        if not self.name or not self.data:
+            self.running = False
+            #  TODO when logqueue is implemented, change this to raise a critical error instead of an exception @artem
+            raise Exception(" No Data found in directory!")
+            
         # Extract times
         times = np.concatenate([data["BackendTime"] for data in self.data])
 
@@ -72,8 +82,7 @@ class Emitter:
         # Set maximum index
         self.indexMax = len(times) - 1
 
-        # Set running flag
-        self.running = True
+        
 
     @staticmethod
     def format(packet: dict, indent: int = 2) -> str:
