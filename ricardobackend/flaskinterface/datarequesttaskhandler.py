@@ -28,7 +28,7 @@ MS_TO_NS = 1e6
 
 
 class DataRequestTask:
-    def __init__(self, jsonconfig: dict, logs_dir: str, logQ:mp.Queue = None) -> None:
+    def __init__(self, jsonconfig: dict, logs_dir: str, __datarequest_log__) -> None:
         # Declare task configuration
         self.config = {}
 
@@ -75,11 +75,7 @@ class DataRequestTask:
         # Initialise previous update time
         self.prevUpdateTime = 0
 
-        # Logging
-        queue_handler = logging.handlers.QueueHandler(logQ)
-        self.logger = logging.getLogger("system")
-        self.logger.addHandler(queue_handler)
-        self.logger.setLevel(logging.INFO)
+        self.__datarequest_log__ = __datarequest_log__
 
     def updateConfig(self, jsonconfig: dict) -> None:
         # Store a deep copy of the provided task configuration
@@ -270,6 +266,7 @@ class DataRequestTaskHandler:
         logs_dir: str,
         sendQ: Union[None, mp.Queue] = None,
         receiveQ: Union[None, mp.Queue] = None,
+        logQ: Union[None, mp.Queue] = None,
         prefix: str = "flaskinterface",
         verbose: bool = False,
     ):
@@ -343,6 +340,14 @@ class DataRequestTaskHandler:
         self.run = True
         self.load_handler_config() #load handler config if it exists
 
+        # Set logging
+        self.logQ: mp.Queue = logQ
+        queue_handler = logging.handlers.QueueHandler(self.logQ)
+        self.logger = logging.getLogger("system")
+        self.logger.addHandler(queue_handler)
+        self.logger.setLevel(logging.INFO)
+
+
     def connect(self):
         pass
 
@@ -358,7 +363,7 @@ class DataRequestTaskHandler:
         """Adds a new task to the config to reques new data"""
         # if already exists, delete old task and spin up new one
         task_id = data["task_name"]
-        self.task_container[task_id] = DataRequestTask(data, self.logs_dir)
+        self.task_container[task_id] = DataRequestTask(data, self.logs_dir, self.__datarequest_log__)
 
     def on_delete_task_config(self, data):
         # Get task identifier

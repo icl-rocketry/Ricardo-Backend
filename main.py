@@ -197,7 +197,7 @@ def startSerialManager(args, sendQueue, receiveQueue, logQueue):
     serman.run()
 
 
-def startWebSocketForwarder(args):
+def startWebSocketForwarder(args, logQueue):
     # Declare websocket forwarder
     wsforwarder = websocketforwarder.WebsocketForwarder(
         sio_host="127.0.0.1",
@@ -333,7 +333,7 @@ if __name__ == "__main__":
 
     # Add websocket forwarder to the process dictionary
     proclist["websocketforwarder"] = multiprocessing.Process(
-        target=startWebSocketForwarder, args=(argsin)
+        target=startWebSocketForwarder, args=(argsin, logQueue)
     )
 
     # Start websocket forwarder

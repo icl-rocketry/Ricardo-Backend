@@ -80,7 +80,7 @@ class FlaskInterface:
         # self.__startFlaskInterface__(config_dir,logs_dir,sendQueue,receiveQueue,flaskhost, flaskport, fake_data,verbose)
 
         # logging
-        queue_handler = logging.handlers.QueueHandler(logQ)
+        queue_handler = logging.handlers.QueueHandler(self.logQueue)
         self.logger = logging.getLogger("system")
         self.logger.addHandler(queue_handler)
         if verbose:
@@ -173,7 +173,7 @@ class FlaskInterface:
         self.socketio_clients.remove(request.sid)
     # TASKS
     def startDataRequestHandler(self):
-        datarequesthandler = DataRequestTaskHandler(self.socketio,self.config_dir,self.logs_dir,logQ = self.logQueue, sendQ = self.sendQueue,receiveQ = self.dtrh_receiveQ,verbose=self.verbose)
+        datarequesthandler = DataRequestTaskHandler(self.socketio,self.config_dir,self.logs_dir, sendQ = self.sendQueue,receiveQ = self.dtrh_receiveQ, logQ = self.logQueue, verbose=self.verbose)
         datarequesthandler.mainloop()
 
     def __SocketIOResponseHandler__(self,item):

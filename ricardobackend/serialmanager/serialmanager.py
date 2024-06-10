@@ -44,6 +44,7 @@ class SerialManager():
 
 		self.sendQ:mp.Queue = sendQ
 		self.receiveQ:mp.Queue = receiveQ
+		self.logQ:mp.Queue = logQ
 
 		self.UDPMonitor = UDPMonitor
 		self.sock = None
@@ -60,10 +61,9 @@ class SerialManager():
 	
 		self.registerLocalPacketHandlerCallback(100,self.__decodeMessagePacket__)
 
-		queue_handler = logging.handlers.QueueHandler(logQ)
+		queue_handler = logging.handlers.QueueHandler(self.logQ)
 		self.logger = logging.getLogger("system")
 		self.logger.addHandler(queue_handler)
-		
 		if verbose:
 			self.logger.setLevel(logging.DEBUG)
 		else:
