@@ -338,3 +338,10 @@ if __name__ == "__main__":
 
     # Start websocket forwarder
     proclist["websocketforwarder"].start()
+
+    #keep alive - fix this later with a join on the subprocesses
+    try:
+        while True:
+            time.sleep(1)
+    except:
+        pass
