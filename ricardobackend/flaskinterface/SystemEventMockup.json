@@ -1,0 +1,31 @@
+{
+    "SystemEvent":
+    {
+        "level":"", // info critical debug error warn
+        "name":"", //Ignition Command, Rocket Log, TVCArm Command
+        "msg":"", 
+        "time":"",
+        "source":""// - string?, ip addres? 
+    }
+}
+
+//examples
+// Ignition Command
+// Ox tank Over pressure
+// Rocket Log
+
+// 
+/*
+    source:
+    {
+        application:
+        ip:
+        rnp:
+            source
+            source_service
+            destination
+            destination_service
+            packet_type
+            uid
+    }
+*/

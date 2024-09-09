@@ -1,6 +1,9 @@
 # Log files
 Logs/*
 
+# Apple
+.DS_Store
+
 # IDE
 .vscode/
 

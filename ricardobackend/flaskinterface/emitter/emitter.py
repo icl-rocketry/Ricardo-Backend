@@ -1,19 +1,26 @@
 # Standard imports
 import json
 import os
+import time
 
 # Third-party imports
 import eventlet
 from flask_socketio import SocketIO
 import numpy as np
 import pandas as pd
+import simplejson
 
 # Default fake telemetry directory
 DEFAULT_DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 
 
 class Emitter:
+    # TODO add log queue and centralized logging implementation here @artem
     def __init__(self, sio: SocketIO, directory: str = DEFAULT_DIRECTORY, loop: bool = False) -> None:
+        
+        # Set running flag
+        self.running = True
+        
         # Store SocketIO client
         self.sio = sio
 
@@ -48,7 +55,12 @@ class Emitter:
             # Store name and data
             self.name.append(name)
             self.data.append(data)
-
+        
+        if not self.name or not self.data:
+            self.running = False
+            #  TODO when logqueue is implemented, change this to raise a critical error instead of an exception @artem
+            raise Exception(" No Data found in directory!")
+            
         # Extract times
         times = np.concatenate([data["BackendTime"] for data in self.data])
 
@@ -70,20 +82,18 @@ class Emitter:
         # Set maximum index
         self.indexMax = len(times) - 1
 
-        # Set running flag
-        self.running = True
-
-    @staticmethod
-    def decode_system_status(string: str) -> str:
-        return format(int(string), "029b")[::-1]
+        
 
     @staticmethod
     def format(packet: dict, indent: int = 2) -> str:
-        # Format system status string
-        if "system_status" in packet:
-            packet["system_status"] = Emitter.decode_system_status(packet["system_status"])
+        # Remove BackendTime field
+        packet.pop("BackendTime")
 
-        return json.dumps(packet, indent=indent)
+        # Use current time for timestamp
+        dataFrame: dict = {"timestamp": time.time_ns() * 1e-6, "data": packet}
+
+        # Return formatted packet
+        return json.dumps(dataFrame, indent=indent)
 
     def emit(self) -> None:
         # Extract current index
@@ -106,7 +116,6 @@ class Emitter:
             packet = row.to_dict(orient="records")[0]
 
             # Format packet
-            # TODO: formatter?
             packet = Emitter.format(packet)
 
             # Print packet

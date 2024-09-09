@@ -1,151 +1,246 @@
-import os
-os.environ['PYTHONASYNCIODEBUG'] = '1'
-
-import asyncio
-import socketio
-import websockets
-from websockets import exceptions as ws_exceptions
-import time
+# Standard imports
 import argparse
+import asyncio
+import logging
 import signal
 import sys
-
-
+import time
 import logging
+import logging.handlers
+import multiprocessing as mp
+
+# Third-party imports
+import socketio
+import socketio.exceptions
+import websockets
+
+# Set logging paramet
 # logger = logging.getLogger('websockets')
 # logger.setLevel(logging.DEBUG)
 # logger.addHandler(logging.StreamHandler())
-logging.getLogger("asyncio").setLevel(logging.INFO)
-logging.getLogger("asyncio").addHandler(logging.StreamHandler())
+# logging.getLogger("asyncio").setLevel(logging.INFO)
+# logging.getLogger("asyncio").addHandler(logging.StreamHandler())
 
+# Set time conversion constants
 MS_TO_NS = 1e6
 NS_TO_MS = 1e-6
 
-class WebsocketForwarder():
-    sio = socketio.AsyncClient()
-    data_queue_dict = {} #threadsafe thru gil.. rip
 
-    def __init__(self,sio_host:str="localhost",sio_port:int=1337,ws_host="localhost",ws_port="8080"):
-        signal.signal(signal.SIGINT,self.exitHandler)
-        signal.signal(signal.SIGTERM,self.exitHandler)
+class WebsocketForwarder:
 
+    def __init__(
+        self,
+        sio_host: str = "localhost",
+        sio_port: int = 1337,
+        ws_host: str = "localhost",
+        ws_port: int = 8080,
+        logQ:mp.Queue = None,
+    ) -> None:
+        # Set signal handlers
+        signal.signal(signal.SIGINT, self.exitHandler)
+        signal.signal(signal.SIGTERM, self.exitHandler)
+
+        # Declare Socket.IO client
+        self.sio = socketio.AsyncClient()
+
+        # Declare data queue dictionary (thread-safe through GIL)
+        self.data_queue_dict = {}
+        self.data_queue_maxsize = -1 #unlimited for now?
+
+        # Set run flag
         self.run = True
+
+        # Declare event loop attribute
         self.eventLoop = None
 
-        self.sio_url = "http://"+sio_host+":"+str(sio_port)+"/"
+        # Set Socket.IO URL
+        self.sio_url = "http://" + sio_host + ":" + str(sio_port) + "/"
+
+        # Store WebSocket host and port
         self.ws_host = ws_host
         self.ws_port = ws_port
-        # self.start_ws_server = websockets.serve(self.send_to_websocket, ws_host, ws_port,ping_timeout = None)
-        self.start_ws_server = websockets.serve(self.send_to_websocket, ws_host, ws_port)
-        #register socketio client callbacks
-        self.sio.on('connect',self.connect)
-        self.sio.on('connect_error',self.connect_error)
-        self.sio.on('disconnect',self.disconnect)
-        self.sio.on('*',self.forward_telemetry,namespace='/telemetry')
 
-       
-    # async def start_ws_server(self):
-    #     server = await websockets.serve(self.send_to_websocket, self.ws_host, self.ws_port)
-    #     await server.wait_closed()
+        # Start WebSocket server
+        self.start_ws_server = websockets.serve(
+            self.send_to_websocket, ws_host, ws_port
+        )
 
+        # Register Socket.IO client callbacks
+        self.sio.on("connect", self.connect)
+        self.sio.on("connect_error", self.connect_error)
+        self.sio.on("disconnect", self.disconnect)
+        self.sio.on("*", self.forward_telemetry, namespace="/telemetry")
+        self.sio.on("*", self.forward_telemetry, namespace="/system_events")
 
+        # logging
+        queue_handler = logging.handlers.QueueHandler(logQ)
+        self.logger = logging.getLogger("system")
+        self.logger.addHandler(queue_handler)
+        self.logger.setLevel(logging.INFO)
 
-    async def connect(self):
-        print('connected')
+    async def connect(self) -> None:
+        # Print connection message
+        #print("Connected")
+        self.__wbsforwarder_log__("Connected", logging.INFO)
 
-    async def connect_error(self,e):
-        print(e)
+    async def connect_error(self, e) -> None:
+        # Print connection error
+        #print(e)
+        self.__wbsforwarder_log__(e, logging.ERROR)
 
-    async def disconnect(self):
-        print('disconnected')
+    async def disconnect(self) -> None:
+        # Print disconnection message
+        #print("Disconnected")
+        self.__wbsforwarder_log__("Disconnected", logging.INFO)
 
-    async def forward_telemetry(self,event,data):
-        #each time we get a new event which has the prefix telemetry we spawn a new queue in a 
-        #threadsafe list 
-        if (event not in self.data_queue_dict.keys()):
-            self.data_queue_dict[event] = asyncio.Queue(maxsize=2)
-    
-        # await self.data_queue_dict[event].put(data)
+    async def forward_telemetry(self, event, data) -> None:
 
-        #if queue is full dont wait to put more data on just ignore
+        # Check if the event exists in the data dict or thre is space to add a new key
+        if not self.addNewQueue(event):
+            return
+
+        # Try to put the data on the event queue
         try:
             self.data_queue_dict[event].put_nowait(data)
         except asyncio.QueueFull:
-            return
-    
-    async def send_to_websocket(self,websocket, path):
-        print(path)
-        telemetry_key = path[len("/ws/"):] #strip prefix from path to get telemetry key
-        
-        #try retrieve data_queue
-        if (telemetry_key not in self.data_queue_dict.keys()):
-            print(telemetry_key + ' not found')
+            # Drop data if the queue is full
             return
 
+    async def send_to_websocket(self, websocket, path) -> None:
+        # Print path
+        #print(path) #TODO use logging library!!
+        self.__wbsforwarder_log__(path, logging.INFO)
+
+        # Strip prefix from path to get telemetry key
+        # TODO: more robust method?
+        telemetry_key = path[len("/ws/") :]
+
+        # Check that telemetry key exists in the data queue dictionary
+        # Check if the event exists in the data dict or thre is space to add a new key
+        if not self.addNewQueue(telemetry_key): # ? we might want to instead send null/NaN rather than just make the queue???
+            return
+
+        # Extract data queue
         data_queue = self.data_queue_dict[telemetry_key]
-        print(telemetry_key + " connected")
 
+        # Print connection message
+        #print(telemetry_key + " connected")
+        message = telemetry_key + " connected"
+        self.__wbsforwarder_log__(message, logging.INFO)
+
+        # Loop while run flag is set
         while self.run:
-            #we need to update this to make sure the data being forwarded is realtime...
+            # Get data from queue
+            # TODO: update to ensure that the forwarded data is realtime
             data = await data_queue.get()
-            # async with asyncio.timeout(timeout=1):
-                # await websocket.send(f"{{\"timestamp\": {time.time_ns()*NS_TO_MS}, \"data\": {data}}}") #Todo make this not horrible -> maybe timestap should be set on the dtrh rather than here
-            # print(len(data))
-            await websocket.send(f"{{\"timestamp\": {time.time_ns()*NS_TO_MS}, \"data\": {data}}}") #Todo make this not horrible -> maybe timestap should be set on the dtrh rather than here
-            # try:
-            # # await websocket.recv()  
-            #     await websocket.send(f"{{\"timestamp\": {time.time_ns()*NS_TO_MS}, \"data\": {data}}}")
-            # except ws_exceptions.ConnectionClosedError as e:
-            #     pass
-            # #     print('[WebsocketForwarder] : caught closed - ' + str(e))
-            #     break
+
+            # Send data over WebSocket
+            # TODO: set timestamp on the DataRequestHandler?
+            await websocket.send(
+                data
+            )
+
+            # Sleep to reduce loop rate
             await asyncio.sleep(0.01)
 
-    async def main(self):
-        
+    async def main(self) -> None:
+        # Enter connection loop
         while True:
             try:
-                await self.sio.connect(self.sio_url, namespaces=["/telemetry"]) 
+                # Connect to the Socket.IO server
+                await self.sio.connect(self.sio_url, namespaces=["/telemetry","/system_events"])
+
+                # Break loop
                 break
             except socketio.exceptions.ConnectionError:
-                print("[WebsocketForwarder]: Couldnt connect to SIO server, trying again!")
+                # Print connection error message
+                # print(
+                #     "[WebsocketForwarder]: Couldn't connect to SIO server, trying again!"
+                # )
+                message = "Couldn't connect to SIO server, trying again!"
+                self.__wbsforwarder_log__(message, logging.ERROR)
+
+                # Sleep to reduce retry rate
                 await asyncio.sleep(1)
 
-        await self.sio.wait()    
-      
+        # Wait for the connection to end
+        await self.sio.wait()
 
-    def start(self):
+    def start(self) -> None:
+        # Add tasks to event loop
         asyncio.get_event_loop().run_until_complete(self.start_ws_server)
         asyncio.get_event_loop().run_until_complete(self.main())
+
+        # Run event loop
         self.eventLoop = asyncio.get_event_loop().run_forever()
-        # asyncio.run(self.start_ws_server)
-        # asyncio.run(self.main())
-        
 
-        
-        # asyncio.run( awaitasyncio.gather(self.start_ws_server(),self.main()))
-        # with asyncio.Runner() as runner:
-        #     runner.run(self.main())
-        #     runner.run(self.start_ws_server())
-
-
-    def exitHandler(self):
+    def exitHandler(self, sig, frame) -> None:
+        # Check if event loop exists
         if self.eventLoop is not None:
+            # Close event loop
             self.eventLoop.close()
-        print('\nWebsocketforwarder Exited!')
+
+        # Print exit message
+        #print("\nWebsocketforwarder Exited!")
+        self.__wbsforwarder_log__("Websocketforwarder Exited!", logging.INFO)
+
+        # Exit
         sys.exit(0)
+    
+    def addNewQueue(self,taskname):
+        if len(self.data_queue_dict) == self.data_queue_maxsize:
+            #print("Error number of keys in data dict exceeds max size! " + str(self.data_queue_maxsize))
+            message = "Number of keys in data dict exceeds max size! " + str(self.data_queue_maxsize)
+            self.__wbsforwarder_log__(message, logging.INFO)
+            return False
+        
+        if taskname not in self.data_queue_dict.keys():
+            # Spawn new queue
+            self.data_queue_dict[taskname] = asyncio.Queue(maxsize=2) #contention??
 
-
+        return True
+    
+    def __wbsforwarder_log__(self, msg, level=logging.DEBUG):
+        message = '[Web Socket Forwarder] - ' + str(msg)
+        self.logger.log(level, message)
 
 
 if __name__ == "__main__":
+    # Declare argument parser
     ap = argparse.ArgumentParser()
-    ap.add_argument("--sio_host", required=False, help="Socketio Host", type=str,default="localhost")
-    ap.add_argument("--sio_port", required=False, help="Socketio Port", type=int,default=1337)
-    ap.add_argument("--ws_host", required=False, help="Websocket Host", type=str,default="localhost")
-    ap.add_argument("--ws_port", required=False, help="Websocket Port", type=int,default=8080)
 
+    # Add arguments
+    ap.add_argument(
+        "--sio_host",
+        required=False,
+        help="Socketio Host",
+        type=str,
+        default="localhost",
+    )
+    ap.add_argument(
+        "--sio_port", required=False, help="Socketio Port", type=int, default=1337
+    )
+    ap.add_argument(
+        "--ws_host",
+        required=False,
+        help="Websocket Host",
+        type=str,
+        default="localhost",
+    )
+    ap.add_argument(
+        "--ws_port", required=False, help="Websocket Port", type=int, default=8080
+    )
+
+    # Parse arguments
     args = vars(ap.parse_args())
-    
-    websocketforwarder = WebsocketForwarder(sio_host=args["sio_host"],sio_port=args["sio_port"],ws_host=args["ws_host"],ws_port=args["ws_port"])
+
+    # Create WebSocket forwarder
+    websocketforwarder = WebsocketForwarder(
+        sio_host=args["sio_host"],
+        sio_port=args["sio_port"],
+        ws_host=args["ws_host"],
+        ws_port=args["ws_port"],
+    )
+
+    # Start WebSocket forwarder
     websocketforwarder.start()
