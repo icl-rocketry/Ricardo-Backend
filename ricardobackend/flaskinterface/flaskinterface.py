@@ -305,7 +305,7 @@ class FlaskInterface:
                     item.pop('type') #remove type field from item
                     # self.__SocketIOMessageHandler__(item)
                     event = {
-                        "level":"info",
+                        "level":"INFO",
                         "name":"Rocket Log",
                         "msg":item["message"],
                         "time":time.time_ns()*(1e-6), #conversion to milliseconds?? idk
