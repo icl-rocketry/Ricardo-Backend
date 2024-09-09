@@ -587,7 +587,7 @@ class DataRequestTaskHandler:
                 "name":"Data Task Request Handler", 
                 "msg": msg, 
                 "time":time.time_ns()*(1e-6),
-                "souce":{
+                "source":{
                     "application": "Ricardo-Backend",
                     "ip":""
                     }
