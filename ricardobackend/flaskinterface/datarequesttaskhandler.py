@@ -46,7 +46,13 @@ class DataRequestTask:
 
         # Initialise last received time
         self.lastReceivedTime = 0
-
+        
+        # last disconnect message time 
+        self.lastDisconnectMessageTime = 0
+        
+        # broadcast disconnect message every second
+        self.lastDisconnectMesssageDelta = 1000 # 1 second
+        
         # Set file name
         # TODO: centralise datetime format string?
         self.fileName = (
@@ -122,6 +128,15 @@ class DataRequestTask:
             ):
                 # Update the connection flag
                 self.config["connected"] = False
+                
+                # check if enough time has passed to send a disconnect message
+                if time.time_ns() - self.lastDisconnectMessageTime > ( self.lastDisconnectMesssageDelta * MS_TO_NS ):
+                    # send disconnect message
+                    self.__datarequest_log__(self.config["task_name"] + " Disconnected!", level=logging.WARNING)
+                    
+                    # update last disconnect message time
+                    self.lastDisconnectMessageTime = time.time_ns()
+                    
 
             # Check for receive-only mode
             if self.config.get("receiveOnly", False):
@@ -186,7 +201,11 @@ class DataRequestTask:
         self.config["rxBytes"] += len(data)
         self.lastReceivedTime = time.time_ns()
         self.config["lastReceivedPacket"] = data.hex()
-        self.config["connected"] = True
+        # check if task was previously disconnected
+        if (self.config["connected"] == False):
+            # task has been reconnected
+            self.config["connected"] = True
+            self.__datarequest_log__(self.config["task_name"] + " Reconnected!", level=logging.INFO)
 
         try:
             # Deserialise packet
@@ -560,3 +579,18 @@ class DataRequestTaskHandler:
     def __datarequest_log__(self, msg, level=logging.DEBUG):
         message = '[Data Task Request Handler] - ' + str(msg)
         self.logger.log(level, message)
+        #decode log level to string
+        logLevel = logging.getLevelName(level)
+        #create system event for log message
+        systemEvent = {
+                "level":logLevel,
+                "name":"Data Task Request Handler", 
+                "msg": msg, 
+                "time":time.time_ns()*(1e-6),
+                "souce":{
+                    "application": "Ricardo-Backend",
+                    "ip":""
+                    }
+            }
+        self.sio.emit("new_event",simplejson.dumps(systemEvent),namespace="/system_events")
+        
