@@ -2,6 +2,7 @@
 import copy
 import csv
 from datetime import datetime, timezone
+import functools
 import json
 import multiprocessing as mp
 import os
@@ -15,6 +16,7 @@ import logging.handlers
 
 # Third-party imports
 import eventlet
+import jsonschema
 import simplejson
 
 # ICLR imports
@@ -84,6 +86,14 @@ class DataRequestTask:
         self.__datarequest_log__ = __datarequest_log__
 
     def updateConfig(self, jsonconfig: dict) -> None:
+        # Get configuration schema
+        schema = self.load_schema()
+
+        # Validate configuration
+        # TODO: how to handle errors? especially since raising an error
+        #       does not stop the whole backend, prompting a restart
+        jsonschema.validate(instance=jsonconfig, schema=schema)
+
         # Store a deep copy of the provided task configuration
         self.config = copy.deepcopy(jsonconfig)
 
@@ -274,6 +284,22 @@ class DataRequestTask:
     def __exit__(self, *args, **kwargs) -> None:
         # Close the log file
         self.logfile.close()
+
+    @classmethod
+    @functools.lru_cache(1)
+    def load_schema(cls) -> dict:
+        # Generate path to schema
+        schema_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "DataRequestTaskSchema.json",
+        )
+
+        # Load schema
+        with open(schema_path, "r") as fp:
+            schema: dict = json.load(fp)
+
+        # Return schema
+        return schema
 
 
 class DataRequestTaskHandler:

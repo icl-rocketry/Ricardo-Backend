@@ -11,3 +11,4 @@ urwid
 aiohttp
 websockets
 simplejson
+jsonschema

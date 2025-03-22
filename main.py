@@ -1,6 +1,7 @@
 # Standard imports
 import argparse
 from datetime import datetime, timezone
+from typing import Dict
 import logging
 import logging.handlers
 import multiprocessing
@@ -138,7 +139,7 @@ ap.add_argument(
 argsin = vars(ap.parse_args())
 
 # Declare process dictionary
-proclist = {}
+proclist: Dict[str, multiprocessing.Process] = {}
 
 
 def exitBackend(sig, frame):
@@ -340,6 +341,7 @@ if __name__ == "__main__":
     proclist["websocketforwarder"].start()
 
     #keep alive - fix this later with a join on the subprocesses
+    # TODO: add a watchdog to check if processes are still alive?
     try:
         while True:
             time.sleep(1)

@@ -1,0 +1,177 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Data Request Task Schema",
+    "description": "",
+    "type": "object",
+    "properties": {
+        "task_name": {
+            "type": "string"
+        },
+        "autostart": {
+            "type": "boolean"
+        },
+        "poll_delta": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+        },
+        "running": {
+            "type": "boolean"
+        },
+        "logger": {
+            "type": "boolean"
+        },
+        "receiveOnly": {
+            "type": "boolean"
+        },
+        "groups": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "request_config": {
+            "type": "object",
+            "properties": {
+                "source": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 254
+                },
+                "destination": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 254
+                },
+                "destination_service": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 254
+                },
+                "command_id": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 254
+                },
+                "command_arg": {
+                    "type": "integer",
+                    "minimum": -2147483648,
+                    "maximum": 2147483647
+                }
+            },
+            "required": [
+                "source",
+                "destination",
+                "destination_service",
+                "command_id",
+                "command_arg"
+            ]
+        },
+        "packet_descriptor": {
+            "patternProperties": {
+                "^.*$": {
+                    "anyOf": [
+                        {
+                            "enum": [
+                                "char",
+                                "int8_t",
+                                "uint8_t",
+                                "bool",
+                                "int16_t",
+                                "uint16_t",
+                                "int",
+                                "int32_t",
+                                "uint32_t",
+                                "int64_t",
+                                "uint64_t",
+                                "float",
+                                "double"
+                            ]
+                        }
+                    ]
+                }
+            },
+            "additionalProperties": false
+        },
+        "bitfield_decoders": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "variable_name": {
+                        "type": "string"
+                    },
+                    "bitfield": {
+                        "type": "string"
+                    },
+                    "flags": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                },
+                                "description": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "description"
+                            ],
+                            "additionalProperties": false
+                        }
+                    }
+                },
+                "required": [
+                    "variable_name",
+                    "bitfield",
+                    "flags"
+                ],
+                "additionalProperties": false
+            }
+        },
+        "rxCounter": {
+            "type": "integer",
+            "minimum": 0
+        },
+        "txCounter": {
+            "type": "integer",
+            "minimum": 0
+        },
+        "connected": {
+            "type": "boolean"
+        },
+        "lastReceivedPacket": {
+            "type": "string"
+        },
+        "rxBytes": {
+            "type": "integer",
+            "minimum": 0
+        },
+        "txBytes": {
+            "type": "integer",
+            "minimum": 0
+        }
+    },
+    "required": [
+        "task_name",
+        "autostart",
+        "poll_delta",
+        "running",
+        "logger",
+        "receiveOnly",
+        "groups",
+        "request_config",
+        "packet_descriptor",
+        "bitfield_decoders",
+        "rxCounter",
+        "txCounter",
+        "connected",
+        "lastReceivedPacket",
+        "rxBytes",
+        "txBytes"
+    ],
+    "additionalProperties": false
+}
