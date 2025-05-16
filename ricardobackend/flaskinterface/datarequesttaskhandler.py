@@ -1,18 +1,21 @@
+# Future imports
+from __future__ import annotations
+
 # Standard imports
 import copy
 import csv
 from datetime import datetime, timezone
 import functools
 import json
+import logging
+import logging.handlers
 import multiprocessing as mp
 import os
-from queue import Full, Empty
+from queue import Empty, Full
 import signal
 import sys
 import time
-from typing import Union
-import logging
-import logging.handlers
+from typing import Any, Callable, Dict, Union, List
 
 # Third-party imports
 import eventlet
@@ -21,285 +24,497 @@ import simplejson
 
 # ICLR imports
 from pylibrnp import rnppacket
-from pylibrnp import defaultpackets
-from pylibrnp import dynamic_rnp_packet_generator as drpg
-from pylibrnp import bitfield_decoder
+from pylibrnp.defaultpackets import SimpleCommandPacket
+from pylibrnp.dynamic_rnp_packet_generator import DynamicRnpPacketGenerator
 
 # Set time conversion constants
+S_TO_MS = 1e3
 MS_TO_NS = 1e6
+NS_TO_MS = 1e-6
+
+
+class RequestConfig:
+
+    def __init__(
+        self,
+        source: int,
+        destination: int,
+        destination_service: int,
+        command_id: int,
+        command_arg: int,
+        source_service: int = 0,
+        *args,
+        **kwargs,
+    ) -> None:
+        # TODO: input checking
+        # TODO: handle args/kwargs
+
+        # Store parameters
+        self.source = source
+        self.source_service = source_service
+        self.destination = destination
+        self.destination_service = destination_service
+        self.command_id = command_id
+        self.command_arg = command_arg
+
+    @classmethod
+    def deserialise(cls, configuration: Dict[str, int]) -> RequestConfig:
+        # Return deserialised configuration
+        return RequestConfig(**configuration)
+
+    def serialise(self) -> Dict[str, int]:
+        # Return serialised configuration
+        return {
+            "source": self.source,
+            "source_service": self.source_service,
+            "destination": self.destination,
+            "destination_service": self.destination_service,
+            "command_id": self.command_id,
+            "command_arg": self.command_arg,
+        }
+
+    def generate_command(self) -> SimpleCommandPacket:
+        # Generate the command packet
+        command_packet = SimpleCommandPacket(
+            command=self.command_id,
+            arg=self.command_arg,
+        )
+
+        # Set the source address and service
+        command_packet.header.source = self.source
+        command_packet.header.source_service = self.source_service
+
+        # Set the destination address and service
+        command_packet.header.destination = self.destination
+        command_packet.header.destination_service = self.destination_service
+
+        # Set the packet type
+        # NOTE: always zero for command packets
+        command_packet.header.packet_type = 0
+
+        # Return command packet
+        return command_packet
+
+
+class PacketDescriptor:
+
+    def __init__(self, descriptor: Dict[str, str], *args, **kwargs) -> None:
+        # TODO: input checking
+        # TODO: handle args/kwargs
+
+        # Store packet descriptor
+        self.descriptor = descriptor
+
+        # Generate dynamic packet
+        self.packet = DynamicRnpPacketGenerator("anon_packettype", descriptor)
+
+    @classmethod
+    def deserialise(cls, config: Dict[str, str]) -> PacketDescriptor:
+        # Return packet descriptor
+        return PacketDescriptor(config)
+
+    def serialise(self) -> Dict[str, Any]:
+        # Return configuration
+        return self.descriptor
+
+    def get_packet_class(self):
+        # Return packet class
+        # TODO: update type hint
+        return self.packet.getClass()
+
+
+class BitfieldDecoder:
+    # TODO: upstream to pylibrnp?
+
+    def __init__(
+        self,
+        variable_name: str,
+        bitfield: str,
+        flags: List[Dict[str, str]],
+        *args,
+        **kwargs,
+    ) -> None:
+        # TODO: input checking
+        # TODO: handle args/kwargs
+
+        # Store configuration
+        # TODO: update names (and JSON schema)
+        self.variable_name = variable_name
+        self.bitfield = bitfield
+        self.flags = flags
+
+        # Generate lookup table
+        self.lookup = {int(flag["id"]): flag["description"] for flag in flags}
+
+    @classmethod
+    def deserialise(cls, config: Dict[str, Any]) -> BitfieldDecoder:
+        # Return deserialised bitfield decoder
+        return BitfieldDecoder(**config)
+
+    def serialise(self) -> Dict[str, Any]:
+        # Return serialised bitfield decoder
+        return {
+            "variable_name": self.variable_name,
+            "bitfield": self.bitfield,
+            "flags": self.flags,
+        }
+
+    def _decode(self, bitfield: int) -> Dict[str, int]:
+        # Get binary representation and reverse
+        binary = "{0:b}".format(bitfield)[::-1]
+
+        # Decode flags
+        flags = {
+            value: (int(binary[key]) if key < len(binary) else 0)
+            for key, value in self.lookup.items()
+        }
+
+        # Return decoded flags
+        return flags
+
+    def decode(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        # Return decoded bitfield
+        return {self.variable_name: self._decode(data[self.bitfield])}
+
+
+class BitfieldDecoderSet:
+
+    def __init__(
+        self,
+        decoders: List[BitfieldDecoder],
+        log: Callable,
+        *args,
+        **kwargs,
+    ) -> None:
+        # Store bitfield decoders
+        self.decoders = decoders
+
+        # Store logger
+        self.log = log
+
+    @classmethod
+    def deserialise(
+        cls,
+        config: List[Dict[str, Any]],
+        log: Callable,
+    ) -> BitfieldDecoderSet:
+        # Deserialise decoders
+        decoders = [BitfieldDecoder.deserialise(config_) for config_ in config]
+
+        # Return deserialised bitfield decoders
+        return BitfieldDecoderSet(decoders, log)
+
+    def serialise(self) -> List[Dict[str, Any]]:
+        # Return serialised decoders
+        return [decoder.serialise() for decoder in self.decoders]
+
+    def decode(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        # Declare dictionary of bitfields
+        bitfields = {}
+
+        # Iterate through decoders
+        for decoder in self.decoders:
+            # Check if the bitfield name already exists in the packet data
+            if decoder.variable_name in data.keys():
+                # Log error
+                self.log(
+                    "Bitfield variable name already exists in decoded packet data, skipping...",
+                    level=logging.ERROR,
+                )
+
+                # Continue to the next bitfield decoder
+                continue
+
+            # Check if the bitfield name already exists in the decoded bitfields
+            if decoder.variable_name in bitfields.keys():
+                # Log error
+                self.log(
+                    "Bitfield variable name already exists in previously decoded bitfield, skipping...",
+                    level=logging.ERROR,
+                )
+
+                # Continue to the next bitfield decoder
+                continue
+
+            try:
+                # Decode bitfield
+                bitfield = decoder.decode(data)
+
+                # Update bitfields
+                bitfields.update(bitfield)
+            except KeyError:
+                # Log error
+                self.log(
+                    "Key not found, skipping...",
+                    level=logging.ERROR,
+                )
+
+        # Return bitfields
+        return bitfields
 
 
 class DataRequestTask:
-    def __init__(self, jsonconfig: dict, logs_dir: str, __datarequest_log__) -> None:
-        # Declare task configuration
-        self.config = {}
 
-        # Declare incoming data packet class type
-        self.packet_class = None
+    def __init__(
+        self,
+        task_name: str,
+        autostart: bool,
+        poll_delta: int,
+        running: bool,
+        logger: bool,
+        receiveOnly: bool,
+        groups: List[str],
+        request_config: RequestConfig,
+        packet_descriptor: PacketDescriptor,
+        bitfield_decoders: BitfieldDecoderSet,
+        rxCounter: int,
+        txCounter: int,
+        rxBytes: int,
+        txBytes: int,
+        connected: bool,
+        lastReceivedPacket: str,
+        logDirectory: str,
+        log: Callable,
+        reset: bool = True,
+        *args,
+        **kwargs,
+    ) -> None:
+        # TODO: input checking
+        # TODO: handle args/kwargs
 
-        # Declare list of bitfield decoders to decode system status strings
-        self.bitfield_decoder_list = []
+        # Store configuration
+        # TODO: update names (and JSON schema)
+        self.task_name = task_name
+        self.autostart = autostart
+        self.poll_delta = poll_delta
+        self.running = running
+        self.logger = logger
+        self.receiveOnly = receiveOnly
+        self.groups = groups
+        self.request_config = request_config
+        self.packet_descriptor = packet_descriptor
+        self.bitfield_decoders = bitfield_decoders
+        self.rxCounter = rxCounter
+        self.txCounter = txCounter
+        self.rxBytes = rxBytes
+        self.txBytes = txBytes
+        self.connected = connected
+        self.lastReceivedPacket = lastReceivedPacket
 
-        # Update task configuration
-        self.updateConfig(jsonconfig)
+        # Reset connection variables
+        if reset:
+            self.rxCounter = 0
+            self.txCounter = 0
+            self.rxBytes = 0
+            self.txBytes = 0
+            self.connected = True
+            self.lastReceivedPacket = ""
 
-        # Set connection timeout duration (default: 5000 ms)
+        # Set connection variables
         self.connectionTimeout = 5000
-
-        # Initialise last received time
         self.lastReceivedTime = 0
-        
-        # last disconnect message time 
         self.lastDisconnectMessageTime = 0
-        
-        # broadcast disconnect message every second
-        self.lastDisconnectMesssageDelta = 1000 # 1 second
-        
-        # Set file name
-        # TODO: centralise datetime format string?
-        self.fileName = (
-            logs_dir
-            + datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S.%fZ")
+        self.lastDisconnectMessageDelta = 1000
+
+        # Initialise log file
+        filename = (
+            datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S.%fZ")
             + "_"
-            + self.config["task_name"]
+            + task_name
             + ".csv"
         )
+        self.filePath = os.path.join(logDirectory, filename)
+        os.makedirs(os.path.dirname(self.filePath), exist_ok=True)
+        self.logfile = open(self.filePath, "a", newline="")
 
-        # Ensure directory exists
-        os.makedirs(os.path.dirname(self.fileName), exist_ok=True)
-
-        # Open log file
-        self.logfile = open(self.fileName, "a", newline="")
-
-        # Generate log file headers
-        logfile_header = ["BackendTime"] + self.packet_class().packetvars
-
-        # Create log file writer
-        self.csv_writer = csv.DictWriter(self.logfile, fieldnames=logfile_header)
-
-        # Write headers to log file
+        # Initialise CSV writer
+        csvHeader = ["BackendTime"] + packet_descriptor.get_packet_class().packetvars
+        self.csv_writer = csv.DictWriter(self.logfile, fieldnames=csvHeader)
         self.csv_writer.writeheader()
 
-        # Initialise previous update time
-        self.prevUpdateTime = 0
+        # Set update time
+        self.previousUpdateTime = 0
 
-        self.__datarequest_log__ = __datarequest_log__
+        # Set logger
+        self.log = log
 
-    def updateConfig(self, jsonconfig: dict) -> None:
+    def __del__(self) -> None:
+        # Close log file
+        self.logfile.close()
+
+    @classmethod
+    def deserialise(
+        cls,
+        config_: Dict[str, Any],
+        logDirectory: str,
+        log: Callable,
+    ) -> DataRequestTask:
+        # Make a copy of the configuration
+        configuration = copy.deepcopy(config_)
+
         # Get configuration schema
-        schema = self.load_schema()
+        schema = cls.load_schema()
 
         # Validate configuration
         # TODO: how to handle errors? especially since raising an error
         #       does not stop the whole backend, prompting a restart
-        jsonschema.validate(instance=jsonconfig, schema=schema)
+        jsonschema.validate(instance=configuration, schema=schema)
 
-        # Store a deep copy of the provided task configuration
-        self.config = copy.deepcopy(jsonconfig)
-
-        # Reset connection variables
-        self.config["rxCounter"] = 0
-        self.config["rxBytes"] = 0
-        self.config["txCounter"] = 0
-        self.config["txBytes"] = 0
-        self.config["connected"] = True
-        self.config["lastReceivedPacket"] = ""
-
-        # Generate and store dynamic packet type
-        self.packet_class = drpg.DynamicRnpPacketGenerator(
-            "anon_packettype", self.config["packet_descriptor"]
-        ).getClass()
-
-        # Store a deep copy of the bitfield decoders
-        self.bitfield_decoder_list = copy.deepcopy(
-            jsonconfig.get("bitfield_decoders", [])
+        # Deserialise objects
+        configuration["request_config"] = RequestConfig.deserialise(
+            configuration["request_config"]
+        )
+        configuration["packet_descriptor"] = PacketDescriptor.deserialise(
+            configuration["packet_descriptor"]
+        )
+        configuration["bitfield_decoders"] = BitfieldDecoderSet.deserialise(
+            configuration["bitfield_decoders"],
+            log,
         )
 
-        # Iterate through the bitfield decoders
-        for decoder in self.bitfield_decoder_list:
-            try:
-                # Generate bitfield decoder
-                decoder["decoder"] = bitfield_decoder.BitfieldDecoder(decoder["flags"])
-            except KeyError:
-                # Print error message
-                #print("[Data Task Request Handler] Bad Config, ignoring entry" + decoder)
-                self.__datarequest_log__("Bad Config, ignoring entry" + decoder, level=logging.ERROR)
+        # Return deserialised task
+        return DataRequestTask(**configuration, logDirectory=logDirectory, log=log)
 
-                # Continue to next bitfield decoder
-                continue
+    def serialise(self) -> Dict[str, Any]:
+        # Return serialised configuration
+        return {
+            "task_name": self.task_name,
+            "autostart": self.autostart,
+            "poll_delta": self.poll_delta,
+            "running": self.running,
+            "logger": self.logger,
+            "receiveOnly": self.receiveOnly,
+            "groups": self.groups,
+            "request_config": self.request_config.serialise(),
+            "packet_descriptor": self.packet_descriptor.serialise(),
+            "bitfield_decoders": self.bitfield_decoders.serialise(),
+            "rxCounter": self.rxCounter,
+            "txCounter": self.txCounter,
+            "rxBytes": self.rxBytes,
+            "txBytes": self.txBytes,
+            "connected": self.connected,
+            "lastReceivedPacket": self.lastReceivedPacket,
+        }
 
-    def requestUpdate(self) -> Union[None, defaultpackets.SimpleCommandPacket]:
+    @classmethod
+    @functools.lru_cache(1)
+    def load_schema(cls) -> Dict[str, Any]:
+        # Generate path to schema
+        directory = os.path.dirname(os.path.abspath(__file__))
+        filename = "DataRequestTaskSchema.json"
+        filepath = os.path.join(directory, filename)
+
+        # Load schema
+        with open(filepath, "r") as fp:
+            schema = json.load(fp)
+
+        # Return schema
+        return schema
+
+    def update(self) -> Union[None, SimpleCommandPacket]:
         # Check if task is running
-        # TODO: refactor
-        if self.config["running"]:
-            # Check if the connection has timed out
-            if time.time_ns() - self.lastReceivedTime > (
-                self.connectionTimeout * MS_TO_NS
-            ):
-                # Update the connection flag
-                self.config["connected"] = False
-                
-                # check if enough time has passed to send a disconnect message
-                if time.time_ns() - self.lastDisconnectMessageTime > ( self.lastDisconnectMesssageDelta * MS_TO_NS ):
-                    # send disconnect message
-                    self.__datarequest_log__(self.config["task_name"] + " Disconnected!", level=logging.WARNING)
-                    
-                    # update last disconnect message time
-                    self.lastDisconnectMessageTime = time.time_ns()
-                    
+        if not self.running:
+            return None
 
-            # Check for receive-only mode
-            if self.config.get("receiveOnly", False):
-                # Return
-                return None
+        # Get current time
+        currentTime = time.time_ns()
 
-            # Check if enough time has passed since the previous update
-            if time.time_ns() - self.prevUpdateTime > (
-                self.config["poll_delta"] * MS_TO_NS
-            ):
-                # Check that a request config has been provided
-                requestConfig = self.config.get("request_config", None)
-                if requestConfig is None:
-                    # Print error message
-                    #print("[Data Task Request Handler] Error No Request Config")
-                    self.__datarequest_log__("No Request Config", level=logging.ERROR)
+        # Calculate time deltas
+        lastReceivedDelta = currentTime - self.lastReceivedTime
+        lastDisconnectMessageDelta = currentTime - self.lastDisconnectMessageTime
 
-                    # Return
-                    return None
+        # Calculate timeouts
+        connectionTimeout = self.connectionTimeout * MS_TO_NS
+        disconnectMessageTimeout = self.lastDisconnectMessageDelta * MS_TO_NS
 
-                # Generate the command packet
-                command_packet = defaultpackets.SimpleCommandPacket(
-                    command=requestConfig["command_id"],
-                    arg=requestConfig["command_arg"],
-                )
+        # Check if the connection has timed out
+        if lastReceivedDelta > connectionTimeout:
+            # Update the connection flag
+            self.connected = False
 
-                # Set the source and service
-                command_packet.header.source = requestConfig["source"]
-                command_packet.header.source_service = requestConfig.get(
-                    "source_service", 0
-                )
+            # Check if enough time has passed to send a disconnect message
+            if lastDisconnectMessageDelta > disconnectMessageTimeout:
+                # Send disconnect message
+                self.log(f"{self.task_name} disconnected", level=logging.WARNING)
 
-                # Set the destination and service
-                command_packet.header.destination = requestConfig["destination"]
-                command_packet.header.destination_service = requestConfig[
-                    "destination_service"
-                ]
+                # Update last disconnect message time
+                self.lastDisconnectMessageTime = currentTime
 
-                # Set the packet type
-                # NOTE: always zero for command packets
-                command_packet.header.packet_type = 0
+        # Check for receive-only mode
+        if self.receiveOnly:
+            return None
 
-                # Update previous update time
-                self.prevUpdateTime = time.time_ns()
+        # Calculate time since last update
+        previousUpdateDelta = currentTime - self.previousUpdateTime
 
-                # Increment transmission counter
-                self.config["txCounter"] += 1
+        # Calculate polling rate
+        pollDelta = self.poll_delta * MS_TO_NS
 
-                # Increment transmission bytes counter
-                # NOTE: packet size is only the payload, not including the header, so need to manually add header size
-                self.config["txBytes"] += command_packet.header.size + command_packet.size
+        # Check if insufficient time has passed since the previous update
+        if previousUpdateDelta < pollDelta:
+            return None
 
-                # Return command packet
-                return command_packet
+        # Generate command packet
+        command_packet = self.request_config.generate_command()
 
-        # Return
-        return None
+        # Update previous update time
+        self.previousUpdateTime = currentTime
 
-    def decodeData(self, data) -> Union[None, dict]:
+        # Increment transmission counter
+        self.txCounter += 1
+
+        # Increment transmission bytes counter
+        # NOTE: packet size is only the payload, not including the header, so need to manually add header size
+        self.txBytes += command_packet.header.size + command_packet.size
+
+        # Return command packet
+        return command_packet
+
+    def decode(self, bytes: bytearray) -> Union[None, Dict[str, Any]]:
         # Update connection state variables
-        self.config["rxCounter"] += 1
-        self.config["rxBytes"] += len(data)
+        self.rxCounter += 1
+        self.rxBytes += len(bytes)
         self.lastReceivedTime = time.time_ns()
-        self.config["lastReceivedPacket"] = data.hex()
-        # check if task was previously disconnected
-        if (self.config["connected"] == False):
-            # task has been reconnected
-            self.config["connected"] = True
-            self.__datarequest_log__(self.config["task_name"] + " Reconnected!", level=logging.INFO)
+        self.lastReceivedPacket = bytes.hex()
+
+        # Check if task was previously disconnected
+        if not self.connected:
+            # Update connection status
+            self.connected = True
+
+            # Log reconnection
+            self.log(f"{self.task_name} reconnected", level=logging.INFO)
 
         try:
             # Deserialise packet
-            deserialized_packet = self.packet_class.from_bytes(data)
+            packet = self.packet_descriptor.get_packet_class().from_bytes(bytes)
         except rnppacket.DeserializationError as e:
-            # Print error message
-            #print("[Data Task Request Handler] received badly formed packet: " + str(e))
-            self.__datarequest_log__("Received badly formed packet: " + str(e), level=logging.ERROR)
-
+            # Log failure to deserialise
+            self.log(f"Received badly formed packet: {e}", level=logging.ERROR)
 
             # Return
             return None
 
-        # Check if the logging is enabled
-        if self.config["logger"]:
-            # Generate the record
-            data_row = {
-                "BackendTime": time.time() * 1000,
-                **deserialized_packet.getData(),
+        # Extract data from the packet
+        data: Dict[str, Any] = packet.getData()
+
+        # Check if logging enabled
+        if self.logger:
+            # Generate record
+            record = {
+                "BackendTime": time.time() * S_TO_MS,
+                **data,
             }
 
-            # Write the record to the log file
-            self.csv_writer.writerow(data_row)
+            # Write record to log file
+            self.csv_writer.writerow(record)
 
-        # Extract data from the packet
-        # TODO: check repeated deserialisation from before
-        packetData = deserialized_packet.getData()
+        # Decode bitfields
+        bitfields = self.bitfield_decoders.decode(data)
+        data.update(bitfields)
 
-        # Iterate through the bitfield decoders
-        for decoder in self.bitfield_decoder_list:
-            # Get the bitfield decoder variable name
-            variableName = decoder.get("variable_name", None)
-
-            # Check if the variable exists in the packet data
-            if variableName is None:
-                # Continue to the next decoder
-                continue
-
-            # Check if the bitfield name already exists in the packet data
-            if variableName in packetData.keys():
-                # Print error message
-                # print(
-                #     "[Data Task Request Handler] bitfield variable name already exists in decoded packet data, skipping..."
-                # )
-                self.__datarequest_log__("Bitfield variable name already exists in decoded packet data, skipping...", level=logging.ERROR)
-
-                # Continue to the next bitfield decoder
-                continue
-
-            try:
-                # Decode the bitfield
-                packetData[variableName] = decoder["decoder"].decode(
-                    int(packetData[decoder["bitfield"]])
-                )
-            except KeyError:
-                # Print error message
-                #print("[Data Task Request Handler] key not found, skipping...")
-                self.__datarequest_log__("Key not found, skipping...", level=logging.ERROR)
-
-                # Continue to the next bitfield decoder
-                continue
-
-        # Return the packet data
-        return packetData
-
-    def __exit__(self, *args, **kwargs) -> None:
-        # Close the log file
-        self.logfile.close()
-
-    @classmethod
-    @functools.lru_cache(1)
-    def load_schema(cls) -> dict:
-        # Generate path to schema
-        schema_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            "DataRequestTaskSchema.json",
-        )
-
-        # Load schema
-        with open(schema_path, "r") as fp:
-            schema: dict = json.load(fp)
-
-        # Return schema
-        return schema
+        # Return packet data
+        return data
 
 
 class DataRequestTaskHandler:
@@ -339,7 +554,7 @@ class DataRequestTaskHandler:
         self.logs_dir = logs_dir
 
         # Declare task container
-        self.task_container = {}  # {task_name:task_object}
+        self.task_container: Dict[str, DataRequestTask] = {}
 
         # Store Socket.IO instance
         self.sio = sio_instance
@@ -349,11 +564,11 @@ class DataRequestTaskHandler:
 
         # Set Socket.IO event handlers
         self.sio.on_event(
-            'connect',
+            "connect",
             self.connect,
-            namespace='/data_request_handler',
+            namespace="/data_request_handler",
         )
-        
+
         self.sio.on_event(
             "getRunningTasks",
             self.on_get_running_tasks,
@@ -361,8 +576,8 @@ class DataRequestTaskHandler:
         )
         self.sio.on_event(
             "newTaskConfig",
-            self.on_new_task_config, 
-            namespace="/data_request_handler"
+            self.on_new_task_config,
+            namespace="/data_request_handler",
         )
         self.sio.on_event(
             "deleteTaskConfig",
@@ -375,15 +590,14 @@ class DataRequestTaskHandler:
             namespace="/data_request_handler",
         )
         self.sio.on_event(
-            "clearTasks", 
-            self.on_clear_tasks, 
+            "clearTasks",
+            self.on_clear_tasks,
             namespace="/data_request_handler",
         )
 
-
         # Set run flag
         self.run = True
-        self.load_handler_config() #load handler config if it exists
+        self.load_handler_config()  # load handler config if it exists
 
         # Set logging
         self.logQ: mp.Queue = logQ
@@ -392,14 +606,13 @@ class DataRequestTaskHandler:
         self.logger.addHandler(queue_handler)
         self.logger.setLevel(logging.INFO)
 
-
     def connect(self):
         pass
 
     def on_get_running_tasks(self):
         """Returns the current running tasks within the data request task handler as a json"""
         # Concatenate all task configurations
-        running_tasks = [task.config for task in self.task_container.values()]
+        running_tasks = [task.serialise() for task in self.task_container.values()]
 
         # Emit to all clients
         self.sio.emit("runningTasks", running_tasks, namespace="/data_request_handler")
@@ -408,27 +621,32 @@ class DataRequestTaskHandler:
         """Adds a new task to the config to reques new data"""
         # if already exists, delete old task and spin up new one
         task_id = data["task_name"]
-        self.task_container[task_id] = DataRequestTask(data, self.logs_dir, self.__datarequest_log__)
+        self.task_container[task_id] = DataRequestTask.deserialise(
+            data,
+            self.logs_dir,
+            self.__datarequest_log__,
+        )
 
     def on_delete_task_config(self, data):
         # Get task identifier
         task_id = data["task_name"]
 
-        # Pop task from the handler and call its destructor
-        self.task_container.pop(task_id).__exit__()
+        # Pop task from the handler
+        # TODO: confirm that destructor is called
+        self.task_container.pop(task_id)
 
     def on_save_handler_config(self, data):
         # Check for no tasks
         if self.task_container is False:
             # Print log message
-            #print("[Data Task Request Handler] No Tasks, Saving empty json")
+            # print("[Data Task Request Handler] No Tasks, Saving empty json")
             self.__datarequest_log__("No Tasks, Saving empty json", level=logging.INFO)
 
             # Set empty task configuration
             handler_config = {}
         else:
             # Extract task configurations
-            handler_config = [task.config for task in self.task_container.values()]
+            handler_config = [task.serialise() for task in self.task_container.values()]
 
         # Declare empty JSON string
         json_string = ""
@@ -437,9 +655,11 @@ class DataRequestTaskHandler:
             # Try to set JSON string from task configuration
             json_string = json.dumps(handler_config, indent=1)
         except Exception as e:
-            # Print error message
-            #print("[Data Task Request Handler] config save error: " + str(e))
-            self.__datarequest_log__("Config save error: " + str(e), level=logging.ERROR)
+            # Log error
+            self.__datarequest_log__(
+                "Config save error: " + str(e),
+                level=logging.ERROR,
+            )
 
             # Return
             return
@@ -460,9 +680,11 @@ class DataRequestTaskHandler:
                     # Check for empty configuration file
                     if not handler_config:
                         # Print error message
-                        #print("[Data Task Request Handler] Empty Json Config")
-                        self.__datarequest_log__("Empty Json Config", level=logging.ERROR)
-
+                        # print("[Data Task Request Handler] Empty Json Config")
+                        self.__datarequest_log__(
+                            "Empty Json Config",
+                            level=logging.ERROR,
+                        )
 
                         # Return
                         return
@@ -481,18 +703,16 @@ class DataRequestTaskHandler:
                 except json.JSONDecodeError:
                     # Print error message
                     print("[Data Task Request Handler] Error opening config file!")
-                    self.__datarequest_log__("Error opening config file!", level=logging.ERROR)
+                    self.__datarequest_log__(
+                        "Error opening config file!",
+                        level=logging.ERROR,
+                    )
 
                     # Return
                     return
 
         except FileNotFoundError as e:
-            # Print exception
-            #print(e)
-            
-
-            # Print error message
-            #print("No Config Found!")
+            # Log error
             self.__datarequest_log__("No Config Found! " + str(e), level=logging.ERROR)
 
             # Return
@@ -502,8 +722,9 @@ class DataRequestTaskHandler:
         # Extract task identifiers
         task_ids = self.task_container.keys()
 
-        # Call destructor on all tasks
-        [self.task_container.pop(task_id).__exit__() for task_id in task_ids]
+        # Clear tasks
+        # TODO: confirm that destructor is called
+        [self.task_container.pop(task_id) for task_id in task_ids]
 
     def mainloop(self):
         # Start run loop
@@ -511,7 +732,7 @@ class DataRequestTaskHandler:
             # Iterate through tasks
             for task_id, task in self.task_container.items():
                 # Generate request packet
-                request_packet = task.requestUpdate()
+                request_packet = task.update()
 
                 # Check that the request packet was generated
                 if request_packet is not None:
@@ -529,16 +750,15 @@ class DataRequestTaskHandler:
         task = self.task_container[task_id]
 
         # Decode data
-        decodedData = task.decodeData(data)
+        decodedData = task.decode(data)
 
         # Check if there is no data to decode
         if decodedData is None:
             # Return
             return
 
-        #create data frame
-        dataFrame:dict = {"timestamp":time.time_ns()*1e-6,
-                          "data":decodedData}
+        # create data frame
+        dataFrame: dict = {"timestamp": time.time_ns() * NS_TO_MS, "data": decodedData}
         # Emit packet on Socket.IO
         # NOTE: simplejson used to dump json as string so that NaNs are converted to null
         # TODO: some kinda of task metadata on telemetry channel too? or maybe on the dtrh channel
@@ -552,7 +772,10 @@ class DataRequestTaskHandler:
         # Generate send data with deepcopy
         # NOTE: deepcopy used to prevent reference to self.identifier
         send_data = copy.deepcopy(
-            {"data": packet.serialize().hex(), "identifier": self.identifier}
+            {
+                "data": packet.serialize().hex(),
+                "identifier": self.identifier,
+            }
         )
 
         # Set task identifier
@@ -563,7 +786,7 @@ class DataRequestTaskHandler:
             self.sendQ.put_nowait(send_data)
         except Full:
             # Print error
-            #print("[Data Task Request Handler] Send Queue Full!")
+            # print("[Data Task Request Handler] Send Queue Full!")
             self.__datarequest_log__("Send Queue Full!", level=logging.ERROR)
 
     def __checkReceiveQueue__(self):
@@ -584,9 +807,8 @@ class DataRequestTaskHandler:
                 self.publish_new_data(responseData, task_id)
             else:
                 # Dump packet as task no longer active
-                #print("[Data Task Request Handler] dumping")
+                # print("[Data Task Request Handler] dumping")
                 self.__datarequest_log__("dumping", level=logging.INFO)
-
 
         except Empty:
             # Continue as there are no packets to process
@@ -594,7 +816,7 @@ class DataRequestTaskHandler:
 
     def __exitHandler__(self, sig=None, frame=None):
         # Exit all tasks
-        [task.__exit__() for task in self.task_container.values()]
+        # [task.__exit__() for task in self.task_container.values()]
 
         # Disable run flag
         self.run = False
@@ -603,20 +825,18 @@ class DataRequestTaskHandler:
         sys.exit(0)
 
     def __datarequest_log__(self, msg, level=logging.DEBUG):
-        message = '[Data Task Request Handler] - ' + str(msg)
+        message = "[Data Task Request Handler] - " + str(msg)
         self.logger.log(level, message)
-        #decode log level to string
+        # decode log level to string
         logLevel = logging.getLevelName(level)
-        #create system event for log message
+        # create system event for log message
         systemEvent = {
-                "level":logLevel,
-                "name":"Data Task Request Handler", 
-                "msg": msg, 
-                "time":time.time_ns()*(1e-6),
-                "source":{
-                    "application": "Ricardo-Backend",
-                    "ip":""
-                    }
-            }
-        self.sio.emit("new_event",simplejson.dumps(systemEvent),namespace="/system_events")
-        
+            "level": logLevel,
+            "name": "Data Task Request Handler",
+            "msg": msg,
+            "time": time.time_ns() * NS_TO_MS,
+            "source": {"application": "Ricardo-Backend", "ip": ""},
+        }
+        self.sio.emit(
+            "new_event", simplejson.dumps(systemEvent), namespace="/system_events"
+        )
