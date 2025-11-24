@@ -35,8 +35,7 @@ class WebsocketForwarder():
         self.sio_url = "http://"+sio_host+":"+str(sio_port)+"/"
         self.ws_host = ws_host
         self.ws_port = ws_port
-        # self.start_ws_server = websockets.serve(self.send_to_websocket, ws_host, ws_port,ping_timeout = None)
-        self.start_ws_server = websockets.serve(self.send_to_websocket, ws_host, ws_port)
+        self.start_ws_server = None
         #register socketio client callbacks
         self.sio.on('connect',self.connect)
         self.sio.on('connect_error',self.connect_error)
@@ -73,7 +72,8 @@ class WebsocketForwarder():
         except asyncio.QueueFull:
             return
     
-    async def send_to_websocket(self,websocket, path):
+    async def send_to_websocket(self,websocket):
+        path = websocket.request.path
         print(path)
         telemetry_key = path[len("/ws/"):] #strip prefix from path to get telemetry key
         
@@ -113,21 +113,20 @@ class WebsocketForwarder():
 
         await self.sio.wait()    
       
-
     def start(self):
-        asyncio.get_event_loop().run_until_complete(self.start_ws_server)
-        asyncio.get_event_loop().run_until_complete(self.main())
-        self.eventLoop = asyncio.get_event_loop().run_forever()
-        # asyncio.run(self.start_ws_server)
-        # asyncio.run(self.main())
-        
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
 
-        
-        # asyncio.run( awaitasyncio.gather(self.start_ws_server(),self.main()))
-        # with asyncio.Runner() as runner:
-        #     runner.run(self.main())
-        #     runner.run(self.start_ws_server())
+        async def setup():
+            await websockets.serve(
+                self.send_to_websocket,
+                self.ws_host,
+                self.ws_port
+            )
+            asyncio.create_task(self.main())
 
+        loop.run_until_complete(setup())
+        loop.run_forever()
 
     def exitHandler(self):
         if self.eventLoop is not None:
