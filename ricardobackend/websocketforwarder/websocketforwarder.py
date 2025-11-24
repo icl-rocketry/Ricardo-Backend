@@ -25,7 +25,7 @@ class WebsocketForwarder():
     sio = socketio.AsyncClient()
     data_queue_dict = {} #threadsafe thru gil.. rip
 
-    def __init__(self,sio_host:str="localhost",sio_port:int=1337,ws_host="localhost",ws_port="8080"):
+    def __init__(self,sio_host:str="localhost",sio_port:int=1337,ws_host="localhost",ws_port="8080", udpQueue=None):
         signal.signal(signal.SIGINT,self.exitHandler)
         signal.signal(signal.SIGTERM,self.exitHandler)
 
@@ -35,6 +35,7 @@ class WebsocketForwarder():
         self.sio_url = "http://"+sio_host+":"+str(sio_port)+"/"
         self.ws_host = ws_host
         self.ws_port = ws_port
+        self.udpQueue = udpQueue
         self.start_ws_server = None
         #register socketio client callbacks
         self.sio.on('connect',self.connect)
@@ -66,6 +67,11 @@ class WebsocketForwarder():
     
         # await self.data_queue_dict[event].put(data)
 
+        if self.udpQueue:
+            try:
+                self.udpQueue.put_nowait(data)
+            except:
+                pass
         #if queue is full dont wait to put more data on just ignore
         try:
             self.data_queue_dict[event].put_nowait(data)

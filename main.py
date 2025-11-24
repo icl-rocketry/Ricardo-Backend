@@ -7,8 +7,7 @@ import signal
 from ricardobackend.flaskinterface import flaskinterface
 from ricardobackend.serialmanager import serialmanager
 from ricardobackend.websocketforwarder import websocketforwarder
-
-
+from ricardobackend.UDP.forwarder import startUDPForwarder
 
 
 # Argument Parsing
@@ -21,8 +20,11 @@ ap.add_argument('--no_autoreconnect',required=False, help="Disable serial autore
 ap.add_argument("--flask-host", required=False, help="flask host", type=str,default="0.0.0.0")
 ap.add_argument("--flask-port", required=False, help="flask Port", type=int,default = 1337)
 
-ap.add_argument('--ws_host',required=False, help="websocket host", type=str,default = "0.0.0.0")
-ap.add_argument('--ws_port',required=False, help="websocket port", type=int,default = 1338)
+ap.add_argument('--ws_host', required=False, help="websocket host", type=str,default = "0.0.0.0")
+ap.add_argument('--ws_port', required=False, help="websocket port", type=int,default = 1338)
+
+ap.add_argument('--udp_host', required=False, type=str, default="127.0.0.1")
+ap.add_argument('--udp_port', required=False, type=int, default=5005)
 
 ap.add_argument('-mon','--monitor', required=False, help="Enable network monitoring ",action='store_true',default=False)
 ap.add_argument('-monip','--monitor-ip', required=False, help="Set network monitoring ip",type=str,default = "127.0.0.1")
@@ -63,11 +65,12 @@ def startSerialManager(args,sendQueue,receiveQueue):
                                      receiveQ=receiveQueue)
     serman.run()
 
-def startWebSocketForwarder(args):
+def startWebSocketForwarder(args, udpQueue):
     wsforwarder = websocketforwarder.WebsocketForwarder(sio_host = "127.0.0.1",
                                                         sio_port = args['flask_port'],
                                                         ws_host = args['ws_host'],
-                                                        ws_port = args['ws_port'])
+                                                        ws_port = args['ws_port'],
+                                                        udpQueue=udpQueue)
     wsforwarder.start()
 
 def startFlaskInterface(args,sendQueue,receiveQueue):
@@ -88,8 +91,8 @@ if __name__ == '__main__':
 
     
     sendQueue = multiprocessing.Queue()
-    # receiveQueue_dict = {"flaskinterface":multiprocessing.Queue()}
     receiveQueue = multiprocessing.Queue()
+    udpQueue = multiprocessing.Queue() 
 
     if not (argsin['fake_data']):
         if argsin.get('device',None) is None:
@@ -102,12 +105,14 @@ if __name__ == '__main__':
     proclist['flaskinterface'].start()
     time.sleep(1)
 
-    proclist['websocketforwarder'] = multiprocessing.Process(target=startWebSocketForwarder,args=(argsin,))
+    proclist['websocketforwarder'] = multiprocessing.Process(
+        target=startWebSocketForwarder,
+        args=(argsin, udpQueue)
+    )
     proclist['websocketforwarder'].start()
 
-    
-
-
-
-
- 
+    proclist['udpforwarder'] = multiprocessing.Process(
+        target=startUDPForwarder,
+        args=(argsin, udpQueue)   # ✅ NOW uses websocket telemetry
+    )
+    proclist['udpforwarder'].start()
