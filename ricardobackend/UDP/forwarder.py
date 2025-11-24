@@ -1,6 +1,6 @@
 import socket
 import json
-
+import time
 def startUDPForwarder(args, receiveQueue):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -8,7 +8,11 @@ def startUDPForwarder(args, receiveQueue):
     print(f"✅ UDP Forwarder sending to {udp_addr}")
 
     while True:
-        data = receiveQueue.get()
+        try:
+            data = receiveQueue.get_nowait()
+        except:
+            time.sleep(0.001)
+            continue
 
         # print("\n🔹 RAW FROM QUEUE:", type(data), data)
 
