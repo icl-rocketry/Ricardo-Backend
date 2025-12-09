@@ -88,18 +88,23 @@ class SerialManager():
 			try:
 				self.__connect__()
 				self.__sm_log__("Device " + self.device + " Connected")
-				
 				break
-			except (OSError, serial.SerialException):
-				
+
+			except (OSError, serial.SerialException) as e:
+				# Log the reason for the failure!
+				self.__sm_log__(f"Connection attempt failed: {repr(e)}")
+
 				if self.autoreconnect:
-					self.__sm_log__('Device ' + self.device + ' Disconnected, retrying...')
-					
+					self.__sm_log__(
+						f"Device {self.device} disconnected, retrying..."
+					)
 					time.sleep(1)
 					continue
 				else:
-					self.__sm_log__('Device ' + self.device + ' Disconnected, killing serial manager. Bye bye!')
-					self.exitHandler(None,None)
+					self.__sm_log__(
+						f"Device {self.device} disconnected, killing serial manager. Bye!")
+					self.exitHandler(None, None)
+
 	
 	def __disconnect__(self):
 		try:
