@@ -78,34 +78,31 @@ class WebsocketForwarder():
         except asyncio.QueueFull:
             return
     
-    async def send_to_websocket(self,websocket):
-        path = websocket.request.path
+    async def send_to_websocket(self, websocket):
+        path = websocket.path
         print(path)
-        telemetry_key = path[len("/ws/"):] #strip prefix from path to get telemetry key
-        
-        #try retrieve data_queue
-        if (telemetry_key not in self.data_queue_dict.keys()):
-            print(telemetry_key + ' not found')
+
+        if not path.startswith("/ws/"):
+            await websocket.close()
             return
 
-        data_queue = self.data_queue_dict[telemetry_key]
-        print(telemetry_key + " connected")
+        telemetry_key = path[len("/ws/"):]
 
-        while self.run:
-            #we need to update this to make sure the data being forwarded is realtime...
-            data = await data_queue.get()
-            # async with asyncio.timeout(timeout=1):
-                # await websocket.send(f"{{\"timestamp\": {time.time_ns()*NS_TO_MS}, \"data\": {data}}}") #Todo make this not horrible -> maybe timestap should be set on the dtrh rather than here
-            # print(len(data))
-            await websocket.send(f"{{\"timestamp\": {time.time_ns()*NS_TO_MS}, \"data\": {data}}}") #Todo make this not horrible -> maybe timestap should be set on the dtrh rather than here
-            # try:
-            # # await websocket.recv()  
-            #     await websocket.send(f"{{\"timestamp\": {time.time_ns()*NS_TO_MS}, \"data\": {data}}}")
-            # except ws_exceptions.ConnectionClosedError as e:
-            #     pass
-            # #     print('[WebsocketForwarder] : caught closed - ' + str(e))
-            #     break
-            await asyncio.sleep(0.01)
+        # Wait until telemetry exists instead of closing socket
+        while telemetry_key not in self.data_queue_dict:
+            await asyncio.sleep(0.1)
+
+        data_queue = self.data_queue_dict[telemetry_key]
+        print(f"{telemetry_key} connected")
+
+        try:
+            while self.run:
+                data = await data_queue.get()
+                await websocket.send(
+                    f'{{"timestamp": {time.time_ns() * NS_TO_MS}, "data": {data}}}'
+                )
+        except ws_exceptions.ConnectionClosed:
+            print(f"{telemetry_key} disconnected")
 
     async def main(self):
         
