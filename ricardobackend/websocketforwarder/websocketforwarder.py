@@ -44,25 +44,25 @@ class WebsocketForwarder():
     async def disconnect(self):
         print('disconnected')
 
-    async def forward_telemetry(self,event,data):
-        #each time we get a new event which has the prefix telemetry we spawn a new queue in a 
-        #threadsafe list 
-        if (event not in self.data_queue_dict.keys()):
+    async def forward_telemetry(self, event, data):
+        print(f"[WebsocketForwarder] Received telemetry event={event}")
+
+        if event not in self.data_queue_dict:
+            print(f"[WebsocketForwarder] Creating queue for telemetry key={event}")
             self.data_queue_dict[event] = asyncio.Queue(maxsize=2)
-    
-        # await self.data_queue_dict[event].put(data)
 
         if self.udpQueue:
             try:
                 self.udpQueue.put_nowait(data)
-            except:
-                pass
-        #if queue is full dont wait to put more data on just ignore
+            except Exception as e:
+                print(f"[WebsocketForwarder] Failed to put on udpQueue: {e}")
+
         try:
             self.data_queue_dict[event].put_nowait(data)
         except asyncio.QueueFull:
+            print(f"[WebsocketForwarder] Queue for {event} full, dropping sample")
             return
-    
+        
     async def send_to_websocket(self, websocket):
         path = websocket.path
         print(f"[WebsocketForwarder] Incoming WS connection on path: {path}")
@@ -76,7 +76,7 @@ class WebsocketForwarder():
         print(f"[WebsocketForwarder] Requested telemetry key: {telemetry_key}")
 
         while telemetry_key not in self.data_queue_dict:
-            print(f"[WebsocketForwarder] Waiting for telemetry_key={telemetry_key} to appear...")
+            # print(f"[WebsocketForwarder] Waiting for telemetry_key={telemetry_key} to appear...")
             await asyncio.sleep(0.5)
 
         data_queue = self.data_queue_dict[telemetry_key]

@@ -177,9 +177,10 @@ class SerialManager():
 					self.__sendToUDP__(decodedData) 
 					# self.__sm_log__(decodedData)
 				except cobs.DecodeError as e:
-					self.__sm_log__("Decoded Error, the following data could not be decoded...")
-					print(e)
-					print(self.receiveBuffer)
+					self.__sm_log__("Decoded Error, the following data could not be decoded... Error: " + str(e))
+					b = bytes(self.receiveBuffer)
+					text = b.decode("utf-8", errors="replace")
+					# print(text)
 					
 				#empty receive buffer
 				self.receiveBuffer = []
