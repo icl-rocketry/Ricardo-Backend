@@ -65,20 +65,22 @@ class WebsocketForwarder():
     
     async def send_to_websocket(self, websocket):
         path = websocket.path
-        print(path)
+        print(f"[WebsocketForwarder] Incoming WS connection on path: {path}")
 
         if not path.startswith("/ws/"):
+            print(f"[WebsocketForwarder] Invalid path, closing: {path}")
             await websocket.close()
             return
 
         telemetry_key = path[len("/ws/"):]
+        print(f"[WebsocketForwarder] Requested telemetry key: {telemetry_key}")
 
-        # Wait until telemetry exists instead of closing socket
         while telemetry_key not in self.data_queue_dict:
-            await asyncio.sleep(0.1)
+            print(f"[WebsocketForwarder] Waiting for telemetry_key={telemetry_key} to appear...")
+            await asyncio.sleep(0.5)
 
         data_queue = self.data_queue_dict[telemetry_key]
-        print(f"{telemetry_key} connected")
+        print(f"[WebsocketForwarder] {telemetry_key} connected")
 
         try:
             while self.run:
@@ -90,16 +92,18 @@ class WebsocketForwarder():
             print(f"{telemetry_key} disconnected")
 
     async def main(self):
-        
+
         while True:
             try:
+                print(f"[WebsocketForwarder] Trying to connect to {self.sio_url}")
                 await self.sio.connect(self.sio_url, namespaces=["/telemetry"]) 
+                print("[WebsocketForwarder] Connected to Socket.IO server")
                 break
-            except socketio.exceptions.ConnectionError:
-                print("[WebsocketForwarder]: Couldnt connect to SIO server, trying again!")
+            except socketio.exceptions.ConnectionError as e:
+                print(f"[WebsocketForwarder] Couldnt connect to SIO server: {e}, trying again!")
                 await asyncio.sleep(1)
 
-        await self.sio.wait()    
+        await self.sio.wait()  
       
     def start(self):
         loop = asyncio.new_event_loop()
@@ -116,7 +120,7 @@ class WebsocketForwarder():
                 f"[WebsocketForwarder] WebSocket server listening on "
                 f"{self.ws_host}:{self.ws_port}"
             )
-            
+
             asyncio.create_task(self.main())
 
         loop.run_until_complete(setup())
