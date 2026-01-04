@@ -1,0 +1,81 @@
+<!doctype html>
+<html>
+  <head>
+    <title>WebSocket Healthcheck</title>
+    <meta charset="utf-8" />
+    <style>
+      body { font-family: sans-serif; margin: 1rem; }
+      label { display: block; margin-top: 0.5rem; }
+      input { width: 400px; max-width: 90%; }
+      button { margin-top: 0.5rem; }
+      #status { margin-top: 1rem; font-weight: bold; }
+    </style>
+  </head>
+  <body>
+    <h1>WebSocket Healthcheck</h1>
+
+    <label>
+      WebSocket URL
+      <input id="ws-url" value="ws://127.0.0.1:1338/ws/example" />
+    </label>
+    <button id="check-ws">Check WebSocket</button>
+
+    <div id="status"></div>
+
+    <script>
+      const urlInput = document.getElementById("ws-url");
+      const checkBtn = document.getElementById("check-ws");
+      const statusDiv = document.getElementById("status");
+
+      function setStatus(text, color = "black") {
+        statusDiv.textContent = text;
+        statusDiv.style.color = color;
+      }
+
+      checkBtn.onclick = () => {
+        const url = urlInput.value.trim();
+        if (!url) {
+          setStatus("Please enter a WebSocket URL", "red");
+          return;
+        }
+
+        setStatus(`Connecting to ${url}...`, "black");
+
+        let ws;
+        try {
+          ws = new WebSocket(url);
+        } catch (err) {
+          console.error(err);
+          setStatus(`Invalid URL or error creating WebSocket: ${err}`, "red");
+          return;
+        }
+
+        const timeoutMs = 3000;
+        const timeoutId = setTimeout(() => {
+          setStatus("Connection timed out", "red");
+          try { ws.close(); } catch (_) {}
+        }, timeoutMs);
+
+        ws.onopen = () => {
+          clearTimeout(timeoutId);
+          setStatus("WebSocket is active / connection successful", "green");
+          // optionally close immediately:
+          ws.close();
+        };
+
+        ws.onerror = (event) => {
+          clearTimeout(timeoutId);
+          console.error("WebSocket error", event);
+          setStatus("WebSocket error (server might not be running)", "red");
+        };
+
+        ws.onclose = (event) => {
+          // only update if we haven’t already set success
+          if (statusDiv.textContent.startsWith("Connecting")) {
+            setStatus(`Connection closed (code ${event.code})`, "orange");
+          }
+        };
+      };
+    </script>
+  </body>
+</html>

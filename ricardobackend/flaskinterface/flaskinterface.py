@@ -10,6 +10,7 @@ import queue as q
 from .taskhandler_webui import taskhandler_webui_bp
 from .telemetry_webui import telemetry_webui_bp
 from .command_webui import command_webui_bp
+from .healthcheck_ui import healthcheck_ui_bp
 from .datarequesttaskhandler import DataRequestTaskHandler
 from .emitter import Emitter
 
@@ -36,6 +37,7 @@ app.register_blueprint(command_webui_bp, url_prefix="/command_ui")
 app.register_blueprint(telemetry_webui_bp, url_prefix="/telemetry_ui")
 app.register_blueprint(taskhandler_webui_bp, url_prefix="/taskhandler_ui")
 
+app.register_blueprint(healthcheck_ui_bp, url_prefix="/healthcheck_ui")
 # app = Flask(__name__, static_folder='static/react')
 #app = Flask(__name__)
 app.config["SECRET_KEY"] = "secret!"

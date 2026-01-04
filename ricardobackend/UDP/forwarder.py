@@ -5,7 +5,7 @@ def startUDPForwarder(args, receiveQueue):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     udp_addr = (args['udp_host'], args['udp_port'])
-    print(f"✅ UDP Forwarder sending to {udp_addr}")
+    print(f"[UDP Forwarder] UDP Forwarder sending to {udp_addr}")
 
     while True:
         try:

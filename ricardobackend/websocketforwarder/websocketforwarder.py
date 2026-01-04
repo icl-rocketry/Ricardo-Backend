@@ -10,14 +10,6 @@ import argparse
 import signal
 import sys
 
-
-import logging
-# logger = logging.getLogger('websockets')
-# logger.setLevel(logging.DEBUG)
-# logger.addHandler(logging.StreamHandler())
-logging.getLogger("asyncio").setLevel(logging.INFO)
-logging.getLogger("asyncio").addHandler(logging.StreamHandler())
-
 MS_TO_NS = 1e6
 NS_TO_MS = 1e-6
 
@@ -42,13 +34,6 @@ class WebsocketForwarder():
         self.sio.on('connect_error',self.connect_error)
         self.sio.on('disconnect',self.disconnect)
         self.sio.on('*',self.forward_telemetry,namespace='/telemetry')
-
-       
-    # async def start_ws_server(self):
-    #     server = await websockets.serve(self.send_to_websocket, self.ws_host, self.ws_port)
-    #     await server.wait_closed()
-
-
 
     async def connect(self):
         print('connected')
@@ -126,6 +111,12 @@ class WebsocketForwarder():
                 self.ws_host,
                 self.ws_port
             )
+
+            print(
+                f"[WebsocketForwarder] WebSocket server listening on "
+                f"{self.ws_host}:{self.ws_port}"
+            )
+            
             asyncio.create_task(self.main())
 
         loop.run_until_complete(setup())
