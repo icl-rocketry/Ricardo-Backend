@@ -92,19 +92,47 @@ class WebsocketForwarder():
             print(f"{telemetry_key} disconnected")
 
     async def main(self):
+        # robust connect with retries and backoff
+        await self._connect_with_retry()
 
-        while True:
-            try:
-                print(f"[WebsocketForwarder] Trying to connect to {self.sio_url}")
-                await self.sio.connect(self.sio_url, namespaces=["/telemetry"]) 
-                print("[WebsocketForwarder] Connected to Socket.IO server")
-                break
-            except socketio.exceptions.ConnectionError as e:
-                print(f"[WebsocketForwarder] Couldnt connect to SIO server: {e}, trying again!")
-                await asyncio.sleep(1)
+        # optionally verify namespace connected
+        if "/telemetry" not in self.sio.namespaces:
+            # namesapces is populated in python-socketio >= 5
+            raise RuntimeError("Connected, but /telemetry namespace not available")
 
-        await self.sio.wait()  
+        print("[WebsocketForwarder] Connected and ready. Waiting for events...")
+        await self.sio.wait()
       
+    async def _connect_with_retry(self):
+        attempt = 0
+        while True:
+            attempt += 1
+            try:
+                print(f"[WebsocketForwarder] Connecting to {self.sio_url} (attempt {attempt})")
+                await self.sio.connect(
+                    self.sio_url,
+                    namespaces=["/telemetry"],
+                    wait=True,
+                    wait_timeout=5,  # seconds
+                )
+                print("[WebsocketForwarder] Connected to Socket.IO server")
+                return
+            except socketio.exceptions.ConnectionError as e:
+                print(f"[WebsocketForwarder] ConnectionError: {e}")
+            except asyncio.TimeoutError:
+                print("[WebsocketForwarder] Connection timed out")
+
+            if self.max_retries is not None and attempt >= self.max_retries:
+                raise RuntimeError(
+                    f"[WebsocketForwarder] Failed to connect to {self.sio_url} "
+                    f"after {attempt} attempts"
+                )
+
+            # exponential backoff with cap
+            delay = min(self.base_delay * 2 ** (attempt - 1), 30.0)
+            print(f"[WebsocketForwarder] Retrying in {delay:.1f} s...")
+            await asyncio.sleep(delay)
+
     def start(self):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)

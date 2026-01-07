@@ -38,6 +38,7 @@ app.register_blueprint(telemetry_webui_bp, url_prefix="/telemetry_ui")
 app.register_blueprint(taskhandler_webui_bp, url_prefix="/taskhandler_ui")
 
 app.register_blueprint(healthcheck_ui_bp, url_prefix="/healthcheck_ui")
+
 # app = Flask(__name__, static_folder='static/react')
 #app = Flask(__name__)
 app.config["SECRET_KEY"] = "secret!"
