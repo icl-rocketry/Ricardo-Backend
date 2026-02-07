@@ -209,7 +209,7 @@ def startWebSocketForwarder(args, logQueue):
     )
 
     # Run websocket forwarder
-    wsforwarder.start()
+    wsforwarder.start_loop()
 
 
 def startFlaskInterface(args, sendQueue, receiveQueue, logQueue):
@@ -286,35 +286,41 @@ def listener_process(args, queue, configurer):
             # Print traceback
             traceback.print_exc(file=sys.stderr)
 
-
 if __name__ == "__main__":
+    # Parse arguments inside the guard to prevent child processes from re-parsing
+    argsin = vars(ap.parse_args())
+
     # Set signal handlers
     signal.signal(signal.SIGINT, exitBackend)
     signal.signal(signal.SIGTERM, exitBackend)
 
-    # Declare log queue
-    logQueue = multiprocessing.Queue(-1)  # TODO idk - chnage to some reasonable limit
+    # Use 'spawn' context explicitly. 
+    # This is required for Windows (no fork support) and macOS/Linux (Python 3.14 safety).
+    ctx = multiprocessing.get_context('spawn')
+
+    # Declare log queue using the safe context
+    logQueue = ctx.Queue(-1)
 
     # Add listener to the process dictionary
-    proclist["listener"] = multiprocessing.Process(
+    proclist["listener"] = ctx.Process(
         target=listener_process, args=(argsin, logQueue, listener_configurer)
     )
 
     # Start listener
     proclist["listener"].start()
 
-    # Declare send and receive queues
-    sendQueue = multiprocessing.Queue()
-    receiveQueue = multiprocessing.Queue()
+    # Declare send and receive queues using the safe context
+    sendQueue = ctx.Queue()
+    receiveQueue = ctx.Queue()
 
     # Check for the fake data flag
     if not argsin["fake_data"]:
         # Raise error if no device provided
         if argsin.get("device", None) is None:
             raise Exception("No device passed")
-        
+
         # Add serial manager to the process dictionary
-        proclist["serialmanager"] = multiprocessing.Process(
+        proclist["serialmanager"] = ctx.Process(
             target=startSerialManager, args=(argsin, sendQueue, receiveQueue, logQueue)
         )
 
@@ -322,7 +328,7 @@ if __name__ == "__main__":
         proclist["serialmanager"].start()
 
     # Add Flask interface to the process dictionary
-    proclist["flaskinterface"] = multiprocessing.Process(
+    proclist["flaskinterface"] = ctx.Process(
         target=startFlaskInterface, args=(argsin, sendQueue, receiveQueue, logQueue)
     )
 
@@ -333,15 +339,14 @@ if __name__ == "__main__":
     time.sleep(1)
 
     # Add websocket forwarder to the process dictionary
-    proclist["websocketforwarder"] = multiprocessing.Process(
+    proclist["websocketforwarder"] = ctx.Process(
         target=startWebSocketForwarder, args=(argsin, logQueue)
     )
 
     # Start websocket forwarder
     proclist["websocketforwarder"].start()
 
-    #keep alive - fix this later with a join on the subprocesses
-    # TODO: add a watchdog to check if processes are still alive?
+    # keep alive
     try:
         while True:
             time.sleep(1)

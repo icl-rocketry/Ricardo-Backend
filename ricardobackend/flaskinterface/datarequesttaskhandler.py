@@ -89,6 +89,12 @@ class DataRequestTask:
         # Get configuration schema
         schema = self.load_schema()
 
+        if "groups" not in jsonconfig:
+            jsonconfig["groups"] = []
+
+        if "bitfield_decoders" not in jsonconfig:
+            jsonconfig["bitfield_decoders"] = []
+
         # Validate configuration
         # TODO: how to handle errors? especially since raising an error
         #       does not stop the whole backend, prompting a restart

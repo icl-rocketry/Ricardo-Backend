@@ -60,11 +60,6 @@ class WebsocketForwarder:
         self.ws_host = ws_host
         self.ws_port = ws_port
 
-        # Start WebSocket server
-        self.start_ws_server = websockets.serve(
-            self.send_to_websocket, ws_host, ws_port
-        )
-
         # Register Socket.IO client callbacks
         self.sio.on("connect", self.connect)
         self.sio.on("connect_error", self.connect_error)
@@ -77,6 +72,11 @@ class WebsocketForwarder:
         self.logger = logging.getLogger("system")
         self.logger.addHandler(queue_handler)
         self.logger.setLevel(logging.INFO)
+
+    async def _run_loop(self):
+        # Start the websocket server using the async context manager
+        async with websockets.serve(self.send_to_websocket, self.ws_host, self.ws_port):
+              await asyncio.Future()
 
     async def connect(self) -> None:
         # Print connection message
@@ -106,14 +106,14 @@ class WebsocketForwarder:
             # Drop data if the queue is full
             return
 
-    async def send_to_websocket(self, websocket, path) -> None:
+    async def send_to_websocket(self, websocket) -> None:
         # Print path
         #print(path) #TODO use logging library!!
-        self.__wbsforwarder_log__(path, logging.INFO)
+        self.__wbsforwarder_log__(websocket.request.path, logging.INFO)
 
         # Strip prefix from path to get telemetry key
         # TODO: more robust method?
-        telemetry_key = path[len("/ws/") :]
+        telemetry_key = websocket.request.path[len("/ws/") :]
 
         # Check that telemetry key exists in the data queue dictionary
         # Check if the event exists in the data dict or thre is space to add a new key
@@ -165,6 +165,9 @@ class WebsocketForwarder:
 
         # Wait for the connection to end
         await self.sio.wait()
+
+    def start_loop(self):
+        asyncio.run(self._run_loop())
 
     def start(self) -> None:
         # Add tasks to event loop
